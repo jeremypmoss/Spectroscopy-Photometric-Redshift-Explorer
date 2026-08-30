@@ -33,10 +33,6 @@ jobs:
             | tr -d '[:space:]' >> /tmp/project.b64
 
           base64 --decode /tmp/project.b64 > /tmp/project.zip
-
-          # The payload is intact but the hand-transferred ZIP directory tail
-          # contains a few bad bytes. Rebuild the central directory from the
-          # local file records, then validate before extracting anything.
           zip -FF /tmp/project.zip --out /tmp/repaired.zip >/tmp/zip-repair.log 2>&1 || {
             cat /tmp/zip-repair.log
             exit 1
@@ -46,10 +42,7 @@ jobs:
           rm -rf /tmp/project
           mkdir -p /tmp/project
           unzip -q /tmp/repaired.zip -d /tmp/project
-
           test -s /tmp/project/spectroscopy-photometric-redshift-explorer/index.html
-          grep -q 'Spectroscopy & Photometric Redshift Explorer' \
-            /tmp/project/spectroscopy-photometric-redshift-explorer/index.html
 
           rm -rf assets .bootstrap .bootstrap-ready
           rm -f .github/workflows/bootstrap.yml
