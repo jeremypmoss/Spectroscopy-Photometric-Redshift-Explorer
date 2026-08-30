@@ -1,0 +1,4819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Spectroscopy &amp; Photometric Redshift Explorer</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 30px;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #111827;
+        color: #f3f4f6;
+    }
+
+    .container {
+        max-width: 1500px;
+        margin: auto;
+    }
+
+    h1 {
+        margin-top: 0;
+        text-align: center;
+    }
+
+    h2 {
+        margin: 0 0 12px 0;
+        font-size: 21px;
+    }
+
+    .section {
+        margin-top: 22px;
+    }
+
+    .spectrum-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+
+    .spectrum-controls label {
+        color: #d1d5db;
+        font-size: 14px;
+    }
+
+    select,
+    input[type="number"],
+    button {
+        font: inherit;
+    }
+
+    select,
+    input[type="number"] {
+        padding: 9px 10px;
+        border-radius: 7px;
+        border: 1px solid #6b7280;
+        background: #f9fafb;
+        color: #111827;
+    }
+
+    button {
+        padding: 9px 13px;
+        border: 0;
+        border-radius: 7px;
+        background: #2563eb;
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    button:hover {
+        background: #1d4ed8;
+    }
+
+    .spectrum-wrap {
+        position: relative;
+        margin-bottom: 67px;
+    }
+
+    .spectrum {
+        position: relative;
+        height: 32px;
+        border-radius: 6px;
+        background: #444;
+        border: 1px solid rgba(255,255,255,0.15);
+        overflow: visible;
+    }
+
+    .spectral-markers {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 82px;
+    }
+
+    .spectral-marker {
+        position: absolute;
+        top: 0;
+        width: 1px;
+        height: 40px;
+        background: rgba(255,255,255,0.95);
+        border: 0;
+        padding: 0;
+        border-radius: 0;
+        cursor: pointer;
+        z-index: 2;
+    }
+
+    .spectral-marker:hover,
+    .spectral-marker:focus {
+        width: 3px;
+        outline: none;
+        background: white;
+    }
+
+    .spectral-marker-label {
+        position: absolute;
+        transform: translateX(-50%);
+        font-size: 10px;
+        white-space: nowrap;
+        color: #d1d5db;
+        cursor: pointer;
+        border: 0;
+        background: transparent;
+        padding: 0 2px;
+        z-index: 3;
+    }
+
+    .spectral-marker-label:hover,
+    .spectral-marker-label:focus {
+        color: white;
+        text-decoration: underline;
+        outline: none;
+    }
+
+    .spectral-marker-label.row-1 {
+        top: 39px;
+    }
+
+    .spectral-marker-label.row-2 {
+        top: 54px;
+    }
+
+    .wavelength-cursor {
+        position: absolute;
+        top: -5px;
+        height: 42px;
+        width: 3px;
+        background: #ffffff;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.35);
+        transform: translateX(-50%);
+        z-index: 4;
+        pointer-events: none;
+    }
+
+    .slider-wrap {
+        width: 100%;
+        margin-bottom: 14px;
+    }
+
+    input[type="range"] {
+        display: block;
+        width: 100%;
+        margin: 0;
+    }
+
+    .controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    #wavelength {
+        width: 125px;
+        font-size: 18px;
+    }
+
+    .region-badge {
+        display: inline-block;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: #374151;
+        color: #e5e7eb;
+        font-size: 13px;
+    }
+
+    .swatch {
+        width: 100%;
+        height: 160px;
+        border-radius: 14px;
+        border: 2px solid rgba(255,255,255,0.2);
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        font-weight: bold;
+        text-shadow:
+            0 0 4px black,
+            0 0 8px black;
+    }
+
+    .swatch-subtitle {
+        font-size: 16px;
+        font-weight: normal;
+    }
+
+    .results,
+    .redshift-panel {
+        background: #1f2937;
+        border-radius: 12px;
+        padding: 18px;
+        font-size: 18px;
+        line-height: 1.7;
+    }
+
+    .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        border-bottom: 1px solid #374151;
+        padding: 5px 0;
+    }
+
+    .row:last-child {
+        border-bottom: none;
+    }
+
+    .label {
+        color: #9ca3af;
+    }
+
+    .value {
+        text-align: right;
+        font-weight: bold;
+    }
+
+    .line-match {
+        margin-top: 16px;
+        padding: 12px;
+        background: #374151;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .synthetic-spectrum {
+        position: relative;
+        height: 92px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.15);
+        overflow: hidden;
+        background: #000;
+    }
+
+    .synthetic-line {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        transform: translateX(-50%);
+        pointer-events: none;
+    }
+
+    .synthetic-axis {
+        display: flex;
+        justify-content: space-between;
+        color: #9ca3af;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+    .calculator-panel {
+        background: #1f2937;
+        border-radius: 12px;
+        padding: 18px;
+        font-size: 18px;
+        line-height: 1.7;
+    }
+
+    .doppler-grid {
+        display: grid;
+        grid-template-columns: 1.25fr 0.85fr auto;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .doppler-result {
+        margin-top: 15px;
+        background: #374151;
+        border-radius: 8px;
+        padding: 12px;
+    }
+
+    .doppler-result strong {
+        color: #f9fafb;
+    }
+
+    .line-info-panel {
+        background: #1f2937;
+        border-radius: 12px;
+        padding: 18px;
+        line-height: 1.6;
+    }
+
+    .line-info-title {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+
+    .line-info-detail {
+        color: #d1d5db;
+    }
+
+    .series-grid {
+        display: grid;
+        grid-template-columns: 1fr 0.7fr;
+        gap: 12px;
+        align-items: end;
+        margin-bottom: 14px;
+    }
+
+    .series-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+        font-size: 15px;
+    }
+
+    .series-table th,
+    .series-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #374151;
+        text-align: left;
+    }
+
+    .series-table th {
+        color: #9ca3af;
+        font-weight: 600;
+    }
+
+    .series-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .series-limit {
+        margin-top: 12px;
+        background: #374151;
+        border-radius: 8px;
+        padding: 10px 12px;
+    }
+
+    .redshift-visualiser {
+        background: #1f2937;
+        border-radius: 12px;
+        padding: 18px;
+    }
+
+    .visualiser-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .visualiser-spectrum {
+        position: relative;
+        height: 130px;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.15);
+        background: #030712;
+    }
+
+    .filter-band {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        opacity: 0.22;
+        border-left: 1px solid rgba(255,255,255,0.25);
+        border-right: 1px solid rgba(255,255,255,0.25);
+        z-index: 1;
+    }
+
+    .filter-label {
+        position: absolute;
+        top: 6px;
+        transform: translateX(-50%);
+        font-size: 11px;
+        font-weight: bold;
+        color: white;
+        text-shadow: 0 1px 3px black;
+        z-index: 3;
+        pointer-events: none;
+    }
+
+    .shifted-line {
+        position: absolute;
+        bottom: 0;
+        width: 3px;
+        height: 95px;
+        transform: translateX(-50%);
+        z-index: 4;
+        box-shadow: 0 0 7px currentColor;
+    }
+
+    .shifted-line-label {
+        position: absolute;
+        bottom: 98px;
+        transform: translateX(-50%);
+        font-size: 10px;
+        white-space: nowrap;
+        color: #f3f4f6;
+        z-index: 5;
+        pointer-events: none;
+    }
+
+    .visualiser-axis {
+        display: flex;
+        justify-content: space-between;
+        color: #9ca3af;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+    .z-control {
+        margin-top: 14px;
+    }
+
+    .z-readout {
+        text-align: center;
+        margin-top: 6px;
+        font-weight: bold;
+    }
+
+    .visualiser-note {
+        margin-top: 10px;
+        color: #9ca3af;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    .redshift-grid {
+        display: grid;
+        grid-template-columns: 1.4fr 0.7fr auto;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .field label {
+        color: #9ca3af;
+        font-size: 14px;
+    }
+
+    .redshift-result {
+        margin-top: 15px;
+        background: #374151;
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+    }
+
+    .small-note,
+    .note {
+        color: #9ca3af;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    .small-note {
+        margin-top: 8px;
+    }
+
+    .note {
+        margin-top: 15px;
+    }
+
+    @media (max-width: 650px) {
+        body {
+            padding: 16px;
+        }
+
+        .spectral-marker-label {
+            font-size: 9px;
+        }
+
+        .redshift-grid,
+        .doppler-grid,
+        .series-grid,
+        .visualiser-controls,
+        .visualiser-extra-controls {
+            grid-template-columns: 1fr;
+        }
+
+        .row {
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .value {
+            text-align: left;
+        }
+    }
+
+    .curve-canvas {
+        width: 100%;
+        height: 300px;
+        display: block;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.15);
+        background: #030712;
+    }
+
+    .visualiser-extra-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin: 12px 0;
+    }
+
+    .visualiser-legend {
+        margin-top: 8px;
+        color: #d1d5db;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+
+    .photometry-panel {
+        margin-top: 16px;
+        background: #111827;
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 10px;
+        padding: 14px;
+    }
+    .photometry-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+    }
+    .photometry-card {
+        background: #1f2937;
+        border-radius: 9px;
+        padding: 10px;
+        text-align: center;
+    }
+    .photometry-band {
+        font-weight: bold;
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    .photometry-value {
+        font-size: 18px;
+    }
+    .colour-index-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
+    .colour-index-chip {
+        background: #374151;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+
+
+    /* --- Redesigned redshift / photometry visualiser --- */
+
+    .viz-shell {
+        display: grid;
+        grid-template-columns: 235px minmax(0, 1fr);
+        gap: 14px;
+        align-items: stretch;
+    }
+
+    .viz-sidebar,
+    .viz-plot-panel,
+    .viz-summary-panel {
+        background: #111827;
+        border: 1px solid rgba(148,163,184,0.22);
+        border-radius: 10px;
+    }
+
+    .viz-sidebar {
+        padding: 14px;
+    }
+
+    .viz-sidebar .field {
+        margin-bottom: 12px;
+    }
+
+    .viz-sidebar label {
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .viz-options-title {
+        margin: 16px 0 8px;
+        font-weight: 700;
+        color: #e5e7eb;
+    }
+
+    .viz-check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 8px 0;
+        color: #d1d5db;
+        font-size: 14px;
+    }
+
+    .viz-check input {
+        width: auto;
+        margin: 0;
+    }
+
+    .viz-button-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .viz-button-row button {
+        width: 100%;
+        padding: 9px 8px;
+        border-radius: 7px;
+        border: 1px solid rgba(148,163,184,0.28);
+        background: #1f2937;
+        color: #f9fafb;
+        cursor: pointer;
+    }
+
+    .viz-button-row button:hover {
+        background: #334155;
+    }
+
+    .viz-main {
+        min-width: 0;
+    }
+
+    .viz-plot-panel {
+        padding: 10px;
+        overflow: hidden;
+    }
+
+    .curve-canvas {
+        width: 100%;
+        height: 360px;
+        display: block;
+        background: #030712;
+        border: 0;
+        border-radius: 8px;
+    }
+
+    .viz-redshift-row {
+        margin-top: 12px;
+    }
+
+    .viz-redshift-row input[type="range"] {
+        width: 100%;
+    }
+
+    .z-readout {
+        text-align: center;
+        margin-top: 5px;
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .viz-summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 14px;
+    }
+
+    .viz-summary-panel {
+        padding: 14px;
+    }
+
+    .viz-summary-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .photometry-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+        gap: 0;
+        margin-top: 8px;
+        border: 1px solid rgba(148,163,184,0.18);
+        border-radius: 7px;
+        overflow: hidden;
+    }
+
+    .photometry-card {
+        background: #172033;
+        border-radius: 0;
+        padding: 10px 7px;
+        text-align: center;
+        border-right: 1px solid rgba(148,163,184,0.18);
+    }
+
+    .photometry-card:last-child {
+        border-right: 0;
+    }
+
+    .photometry-band {
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .photometry-value {
+        margin-top: 5px;
+        font-size: 19px;
+        font-weight: 700;
+    }
+
+    .colour-index-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 0;
+        margin-top: 8px;
+        border: 1px solid rgba(148,163,184,0.18);
+        border-radius: 7px;
+        overflow: hidden;
+    }
+
+    .colour-index-chip {
+        background: #172033;
+        border-radius: 0;
+        padding: 12px 8px;
+        text-align: center;
+        border-right: 1px solid rgba(148,163,184,0.18);
+        font-size: 13px;
+    }
+
+    .colour-index-chip:last-child {
+        border-right: 0;
+    }
+
+    .viz-footnote {
+        text-align: center;
+        margin-top: 12px;
+        color: #9ca3af;
+        font-size: 12px;
+        font-style: italic;
+    }
+
+    @media (max-width: 780px) {
+        .viz-shell {
+            grid-template-columns: 1fr;
+        }
+
+        .viz-summary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .curve-canvas {
+            height: 320px;
+        }
+    }
+
+
+    /* --- Wide desktop layout --- */
+    body > .container,
+    .container {
+        max-width: 1500px !important;
+        width: min(96vw, 1500px);
+    }
+
+    .redshift-visualiser {
+        width: 100%;
+    }
+
+    .viz-shell {
+        display: grid;
+        grid-template-columns: 230px minmax(0, 1fr) 285px;
+        gap: 14px;
+        align-items: stretch;
+    }
+
+    .viz-main {
+        min-width: 0;
+    }
+
+    .viz-side-summary {
+        display: grid;
+        grid-template-rows: auto auto;
+        gap: 14px;
+        min-width: 0;
+    }
+
+    .viz-summary-grid {
+        display: contents;
+    }
+
+    .viz-summary-panel {
+        margin-top: 0;
+    }
+
+    .curve-canvas {
+        height: 430px;
+    }
+
+    .viz-plot-panel {
+        height: 100%;
+    }
+
+    .viz-sidebar {
+        min-width: 0;
+    }
+
+    @media (max-width: 1100px) {
+        .viz-shell {
+            grid-template-columns: 220px minmax(0, 1fr);
+        }
+
+        .viz-side-summary {
+            grid-column: 1 / -1;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: none;
+        }
+    }
+
+    @media (max-width: 780px) {
+        .viz-shell {
+            grid-template-columns: 1fr;
+        }
+
+        .viz-side-summary {
+            grid-column: auto;
+            grid-template-columns: 1fr;
+        }
+
+        .curve-canvas {
+            height: 320px;
+        }
+    }
+
+
+    .viz-side-summary .photometry-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .viz-side-summary .colour-index-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .viz-side-summary .photometry-card,
+    .viz-side-summary .colour-index-chip {
+        min-width: 0;
+    }
+
+
+    /* --- Fix vertical spacing beneath redshift plot --- */
+    .viz-main {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .viz-plot-panel {
+        height: auto;
+    }
+
+    .viz-redshift-row {
+        margin-top: 14px;
+        padding-top: 2px;
+    }
+
+    .viz-redshift-row input[type="range"] {
+        display: block;
+        width: 100%;
+        margin: 0 0 8px 0;
+    }
+
+    .z-readout {
+        margin-top: 0;
+        line-height: 1.25;
+    }
+
+    .visualiser-note {
+        margin-top: 10px;
+        line-height: 1.45;
+        min-height: 2.8em;
+    }
+
+    .viz-footnote {
+        position: static;
+        display: block;
+        clear: both;
+        margin-top: 16px;
+        padding-top: 2px;
+        line-height: 1.4;
+    }
+
+    .redshift-visualiser {
+        overflow: visible;
+    }
+
+
+    /* --- Quasar breaks + colour-redshift track --- */
+    .colour-z-panel { margin-top:16px; background:#111827; border:1px solid rgba(148,163,184,.22);
+        border-radius:10px; padding:14px; }
+    .colour-z-header { display:flex; align-items:end; justify-content:space-between; gap:14px; margin-bottom:10px; }
+    .colour-z-header .field { min-width:190px; margin:0; }
+    .colour-z-canvas { width:100%; height:260px; display:block; background:#030712;
+        border-radius:8px; border:1px solid rgba(255,255,255,.12); }
+    .break-note { margin-top:8px; color:#9ca3af; font-size:12px; line-height:1.45; }
+    @media (max-width:780px) {
+        .colour-z-header { align-items:stretch; flex-direction:column; }
+        .colour-z-header .field { min-width:0; }
+    }
+
+
+    .spectrum-disclaimer {
+        position: static !important;
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 32px 0 18px 0;
+        padding: 0 10px;
+        color: #9ca3af;
+        font-size: 12px;
+        line-height: 1.45;
+        text-align: center;
+    }
+
+
+    /* --- Colour-colour diagram --- */
+    .colour-colour-panel {
+        margin-top: 16px;
+        background: #111827;
+        border: 1px solid rgba(148,163,184,0.22);
+        border-radius: 10px;
+        padding: 14px;
+    }
+
+    .colour-colour-header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 10px;
+    }
+
+    .colour-colour-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        min-width: 360px;
+    }
+
+    .colour-colour-controls .field {
+        margin: 0;
+    }
+
+    .colour-colour-canvas {
+        width: 100%;
+        height: 320px;
+        display: block;
+        background: #030712;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .colour-colour-note {
+        margin-top: 8px;
+        color: #9ca3af;
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    @media (max-width: 780px) {
+        .colour-colour-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .colour-colour-controls {
+            min-width: 0;
+            grid-template-columns: 1fr;
+        }
+    }
+
+
+    .linked-z-slider {
+        margin-top: 12px;
+    }
+
+    .linked-z-slider input[type="range"] {
+        display: block;
+        width: 100%;
+        margin: 0 0 6px 0;
+    }
+
+    .linked-z-readout {
+        text-align: center;
+        color: #d1d5db;
+        font-size: 14px;
+        font-weight: 700;
+    }
+    
+    .photoz-panel {
+        margin-top: 16px;
+        background: #111827;
+        border: 1px solid rgba(148,163,184,0.22);
+        border-radius: 10px;
+        padding: 14px;
+    }
+
+    .photoz-header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 10px;
+    }
+
+    .photoz-controls {
+        display: grid;
+        grid-template-columns: minmax(180px, 260px) auto;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .photoz-controls .field {
+        margin: 0;
+    }
+
+    .photoz-canvas {
+        display: block;
+        width: 100%;
+        height: 260px;
+        background: #030712;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+    }
+
+    .photoz-summary {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0,1fr));
+        gap: 10px;
+    }
+
+    .photoz-stat {
+        background: rgba(255,255,255,0.035);
+        border: 1px solid rgba(255,255,255,0.09);
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    .photoz-stat .label {
+        color: #9ca3af;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .photoz-stat .value {
+        margin-top: 4px;
+        color: #f3f4f6;
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .photoz-note {
+        margin-top: 9px;
+        color: #9ca3af;
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    @media (max-width: 780px) {
+        .photoz-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .photoz-controls {
+            grid-template-columns: 1fr;
+        }
+
+        .photoz-summary {
+            grid-template-columns: 1fr;
+        }
+    }
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Spectroscopy &amp; Photometric Redshift Explorer</h1>
+
+    <div class="spectrum-controls">
+        <label for="lineSet">Spectrum labels:</label>
+        <select id="lineSet">
+            <option value="major">Major lines</option>
+            <option value="hydrogen">Hydrogen</option>
+            <option value="nebular">Nebular</option>
+            <option value="stellar">Stellar absorption</option>
+            <option value="all">All lines</option>
+        </select>
+    </div>
+
+    <div class="spectrum-wrap">
+        <div class="spectrum" id="spectrum">
+            <div id="wavelengthCursor" class="wavelength-cursor"></div>
+        </div>
+        <div class="spectral-markers" id="spectralMarkers"></div>
+    </div>
+
+    
+        <div class="spectrum-disclaimer">
+            Displayed colours are approximate sRGB representations of monochromatic light.
+            A computer monitor cannot reproduce every colour on the true spectral locus.
+            The spectrum bar covers only the nominal visible range, 380–780 nm; ultraviolet
+            and infrared wavelengths are still used for frequency, energy, line identification,
+            and redshift calculations.
+        </div>
+
+<div class="slider-wrap">
+        <input
+            id="slider"
+            type="range"
+            min="380"
+            max="780"
+            step="0.1"
+            value="486.1"
+            aria-label="Visible wavelength from 380 to 780 nanometres"
+        >
+    </div>
+
+    <div class="controls">
+        <input
+            id="wavelength"
+            type="number"
+            min="100"
+            max="2500"
+            step="0.1"
+            value="486.1"
+            aria-label="Wavelength"
+        >
+        <select id="unitSelect" aria-label="Wavelength unit">
+            <option value="nm">nm</option>
+            <option value="angstrom">Å</option>
+            <option value="um">µm</option>
+        </select>
+        <span id="regionBadge" class="region-badge"></span>
+    </div>
+
+    <div id="swatch" class="swatch">
+        <div id="swatchValue">486.1 nm</div>
+        <div id="swatchSubtitle" class="swatch-subtitle"></div>
+    </div>
+
+    <div class="results">
+
+        <div class="row">
+            <span class="label">Region / colour</span>
+            <span id="colourName" class="value"></span>
+        </div>
+
+        <div class="row">
+            <span class="label">RGB</span>
+            <span id="rgb" class="value"></span>
+        </div>
+
+        <div class="row">
+            <span class="label">HEX</span>
+            <span id="hex" class="value"></span>
+        </div>
+
+        <div class="row">
+            <span class="label">Frequency</span>
+            <span id="frequency" class="value"></span>
+        </div>
+
+        <div class="row">
+            <span class="label">Photon energy</span>
+            <span id="energy" class="value"></span>
+        </div>
+
+        <div id="lineMatch" class="line-match"></div>
+
+    </div>
+
+    <div class="section">
+        <h2>Spectral line information</h2>
+
+        <div id="lineInfoPanel" class="line-info-panel">
+            <div id="lineInfoTitle" class="line-info-title">
+                Select a spectral line
+            </div>
+            <div id="lineInfoDetail" class="line-info-detail">
+                Click a labelled line on the spectrum above to see what it represents.
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Synthetic spectrum</h2>
+
+        <div class="calculator-panel">
+
+            <div class="spectrum-controls">
+                <label for="spectrumMode">Display:</label>
+                <select id="spectrumMode">
+                    <option value="absorption">Absorption spectrum</option>
+                    <option value="emission">Emission spectrum</option>
+                </select>
+                <span class="small-note" style="margin:0;">
+                    Uses the selected line set above
+                </span>
+            </div>
+
+            <div id="syntheticSpectrum" class="synthetic-spectrum"></div>
+
+            <div class="synthetic-axis">
+                <span>380 nm</span>
+                <span>580 nm</span>
+                <span>780 nm</span>
+            </div>
+
+            <div id="spectrumDescription" class="small-note"></div>
+
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Hydrogen series explorer</h2>
+
+        <div class="calculator-panel">
+
+            <div class="series-grid">
+
+                <div class="field">
+                    <label for="seriesSelect">Hydrogen series</label>
+                    <select id="seriesSelect">
+                        <option value="1">Lyman (to n = 1)</option>
+                        <option value="2" selected>Balmer (to n = 2)</option>
+                        <option value="3">Paschen (to n = 3)</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="maxUpperN">Highest upper level n</label>
+                    <input
+                        id="maxUpperN"
+                        type="number"
+                        min="3"
+                        max="20"
+                        step="1"
+                        value="8"
+                    >
+                </div>
+
+            </div>
+
+            <div id="seriesDescription" class="small-note"></div>
+
+            <table class="series-table">
+                <thead>
+                    <tr>
+                        <th>Transition</th>
+                        <th>Wavelength</th>
+                        <th>Region</th>
+                    </tr>
+                </thead>
+                <tbody id="seriesTableBody"></tbody>
+            </table>
+
+            <div id="seriesLimit" class="series-limit"></div>
+
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Redshifted spectrum + photometric filters</h2>
+
+        <div class="redshift-visualiser">
+
+            <div class="viz-shell">
+
+                <div class="viz-sidebar">
+
+                    <div class="field">
+                        <label for="visualiserLineSet">Spectrum</label>
+                        <select id="visualiserLineSet">
+                            <option value="quasar" selected>Simple quasar spectrum</option>
+                            <option value="hydrogen">Hydrogen lines</option>
+                            <option value="nebular">Nebular lines</option>
+                            <option value="stellar">Stellar absorption lines</option>
+                            <option value="major">Major lines</option>
+                            <option value="all">All reference lines</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="filterSet">Filter curves</label>
+                        <select id="filterSet">
+                            <option value="none">None</option>
+                            <option value="sdss" selected>SDSS ugriz</option>
+                            <option value="legacy">Legacy Surveys grz</option>
+                            <option value="galex">GALEX FUV/NUV</option>
+                            <option value="wise">WISE W1/W2</option>
+                            <option value="phd">GALEX + SDSS + Legacy + WISE</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="axisMode">Wavelength range</label>
+                        <select id="axisMode">
+                            <option value="auto" selected>Automatic for filters</option>
+                            <option value="uvopt">UV + optical (100–1100 nm)</option>
+                            <option value="optnir">Optical + near-IR (300–2500 nm)</option>
+                            <option value="wide">UV to W2 (100–5500 nm)</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="continuumSlope">Quasar continuum α (Fν ∝ ν^α)</label>
+                        <input id="continuumSlope"
+                               type="number"
+                               min="-2"
+                               max="1"
+                               step="0.1"
+                               value="-0.5">
+                    </div>
+
+                    <div class="viz-options-title">Plot options</div>
+
+                    <label class="viz-check">
+                        <input id="showFilterCurves" type="checkbox" checked>
+                        Show filter curves
+                    </label>
+
+                    <label class="viz-check">
+                        <input id="showReferenceLines" type="checkbox" checked>
+                        Show emission/reference lines
+                    </label>
+
+                    <label class="viz-check">
+                        <input id="colourByWavelength" type="checkbox" checked>
+                        Colour by observed wavelength
+                    </label>
+
+                    <label class="viz-check">
+                        <input id="logFluxScale" type="checkbox">
+                        Log-like flux scale
+                    </label>
+
+                    <label class="viz-check">
+                        <input id="normaliseSpectrum" type="checkbox" checked>
+                        Normalise spectrum
+                    </label>
+
+                    <div class="viz-button-row">
+                        <button id="resetVisualiser" type="button">Reset view</button>
+                        <button id="saveVisualiser" type="button">Screenshot</button>
+                    </div>
+
+                </div>
+
+                <div class="viz-main">
+
+                    <div class="viz-plot-panel">
+                        <canvas id="visualiserCanvas" class="curve-canvas"></canvas>
+                    </div>
+
+                    <div class="viz-redshift-row">
+                        <input
+                            id="visualiserZ"
+                            type="range"
+                            min="0"
+                            max="5"
+                            step="0.01"
+                            value="0.36"
+                            aria-label="Redshift z"
+                        >
+                        <div id="visualiserZReadout" class="z-readout">
+                            Redshift&nbsp;&nbsp; z = 0.36
+                        </div>
+                    </div>
+
+                    <div id="visualiserStatus" class="visualiser-note"></div>
+
+                </div>
+
+                <div class="viz-side-summary">
+
+                    <div class="viz-summary-panel">
+                        <div class="viz-summary-title">
+                            Synthetic photometry (relative fluxes)
+                        </div>
+                        <div id="photometryGrid" class="photometry-grid"></div>
+                        <div class="small-note" style="text-align:center; margin-top:8px;">
+                            Normalised to the brightest selected band
+                        </div>
+                    </div>
+
+                    <div class="viz-summary-panel">
+                        <div class="viz-summary-title">
+                            Colours (magnitudes)
+                        </div>
+                        <div id="colourIndexList" class="colour-index-list"></div>
+                        <div class="small-note" style="text-align:center; margin-top:8px;">
+                            m₁ − m₂ = −2.5 log₁₀(F₁/F₂)
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="colour-z-panel">
+                <div class="colour-z-header">
+                    <div>
+                        <div class="viz-summary-title">Colour–redshift track</div>
+                        <div class="small-note">Synthetic colour of the quasar model from z = 0 to 5.</div>
+                    </div>
+                    <div class="field">
+                        <label for="colourZSelect">Colour index</label>
+                        <select id="colourZSelect"></select>
+                    </div>
+                </div>
+                <canvas id="colourZCanvas" class="colour-z-canvas"></canvas>
+
+                <div class="linked-z-slider">
+                    <input id="colourZSlider" type="range"
+                           min="0" max="5" step="0.01" value="0.36"
+                           aria-label="Redshift z for colour-redshift track">
+                    <div id="colourZSliderReadout" class="linked-z-readout">z = 0.36</div>
+                </div>
+                <div class="break-note">
+                    The quasar model now includes approximate Lyα-forest suppression below
+                    121.6 nm in the rest frame and a strong Lyman-limit cutoff below 91.2 nm.
+                </div>
+            </div>
+
+            <div class="colour-colour-panel">
+                <div class="colour-colour-header">
+                    <div>
+                        <div class="viz-summary-title">Colour–colour diagram</div>
+                        <div class="small-note">
+                            Synthetic quasar track from z = 0 to 5 in colour space.
+                        </div>
+                    </div>
+
+                    <div class="colour-colour-controls">
+                        <div class="field">
+                            <label for="colourColourX">X axis</label>
+                            <select id="colourColourX"></select>
+                        </div>
+
+                        <div class="field">
+                            <label for="colourColourY">Y axis</label>
+                            <select id="colourColourY"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <canvas id="colourColourCanvas" class="colour-colour-canvas"></canvas>
+
+                <div class="linked-z-slider">
+                    <input id="colourColourSlider" type="range"
+                           min="0" max="5" step="0.01" value="0.36"
+                           aria-label="Redshift z for colour-colour diagram">
+                    <div id="colourColourSliderReadout" class="linked-z-readout">z = 0.36</div>
+                </div>
+
+                <div id="degeneracySummary" class="colour-colour-note">
+                    Searching this colour–colour track for redshift degeneracies…
+                </div>
+                <div class="colour-colour-note">
+                    Click near either track to jump the whole widget to that redshift. Axis presets follow
+                    the selected filter set; the white marker shows the current redshift.
+                </div>
+            </div>
+
+            <div class="photoz-panel">
+                <div class="photoz-header">
+                    <div>
+                        <div class="viz-summary-title">Toy photometric-redshift estimator</div>
+                        <div class="small-note">
+                            Treat the current synthetic quasar colours as an observation and ask which redshift best matches them.
+                        </div>
+                    </div>
+
+                    <div class="photoz-controls">
+                        <div class="field">
+                            <label for="photozSigma">Photometric uncertainty (mag)</label>
+                            <input id="photozSigma" type="range"
+                                   min="0.01" max="0.40" step="0.01" value="0.08">
+                            <div id="photozSigmaReadout" class="small-note">σ = 0.08 mag</div>
+                        </div>
+
+                        <button id="photozRegenerate" type="button">
+                            Regenerate noisy observation
+                        </button>
+                    </div>
+                </div>
+
+                <canvas id="photozCanvas" class="photoz-canvas"></canvas>
+                <div id="photozHoverReadout" class="photoz-note"
+                     style="text-align:center; min-height:1.45em;">
+                    Move the mouse over the likelihood curve to inspect z and relative likelihood.
+                </div>
+
+                <div class="photoz-summary">
+                    <div class="photoz-stat">
+                        <div class="label">True z</div>
+                        <div id="photozTrue" class="value">0.36</div>
+                    </div>
+                    <div class="photoz-stat">
+                        <div class="label">Best-fit z</div>
+                        <div id="photozBest" class="value">—</div>
+                    </div>
+                    <div class="photoz-stat">
+                        <div class="label">Secondary solution</div>
+                        <div id="photozSecondary" class="value">—</div>
+                    </div>
+                </div>
+
+                <div id="photozMessage" class="photoz-note">
+                    Higher uncertainty broadens the likelihood and can make redshift degeneracies more obvious.
+                </div>
+            </div>
+
+            <div class="viz-footnote">
+                Synthetic teaching tool. Filter profiles and quasar spectrum are approximate.
+            </div>
+
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Redshift calculator</h2>
+
+        <div class="redshift-panel">
+
+            <div class="spectrum-controls">
+                <label for="redshiftMode">Calculate:</label>
+                <select id="redshiftMode">
+                    <option value="observed">Observed wavelength from z</option>
+                    <option value="z">Redshift from observed wavelength</option>
+                </select>
+            </div>
+
+            <div class="redshift-grid">
+
+                <div class="field">
+                    <label for="restLine">Rest-frame line</label>
+                    <select id="restLine"></select>
+                </div>
+
+                <div class="field" id="zField">
+                    <label for="redshift">Redshift z</label>
+                    <input
+                        id="redshift"
+                        type="number"
+                        min="0"
+                        max="10"
+                        step="0.01"
+                        value="0.50"
+                    >
+                </div>
+
+                <div class="field" id="observedField" style="display:none;">
+                    <label for="observedInput">Observed wavelength</label>
+                    <input
+                        id="observedInput"
+                        type="number"
+                        step="0.1"
+                        value="984.20"
+                    >
+                </div>
+
+                <button id="useObserved" type="button">
+                    Show observed λ
+                </button>
+
+            </div>
+
+            <div id="redshiftResult" class="redshift-result"></div>
+
+            <div class="small-note">
+                Uses λ<sub>obs</sub> = λ<sub>rest</sub>(1 + z).
+                Wavelength units follow the selector above.
+            </div>
+
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Doppler radial velocity</h2>
+
+        <div class="calculator-panel">
+
+            <div class="doppler-grid">
+
+                <div class="field">
+                    <label for="dopplerRestLine">Rest-frame line</label>
+                    <select id="dopplerRestLine"></select>
+                </div>
+
+                <div class="field">
+                    <label for="dopplerObserved">Observed wavelength</label>
+                    <input
+                        id="dopplerObserved"
+                        type="number"
+                        step="0.1"
+                        value="657.00"
+                    >
+                </div>
+
+                <button id="useMainWavelength" type="button">
+                    Use main λ
+                </button>
+
+            </div>
+
+            <div id="dopplerResult" class="doppler-result"></div>
+
+            <div class="small-note">
+                Positive velocity means the source is receding; negative means
+                approaching. Both the low-velocity approximation and the
+                relativistic Doppler result are shown.
+            </div>
+
+        </div>
+    </div>
+
+    
+
+</div>
+
+<script>
+
+const wavelengthInput = document.getElementById("wavelength");
+const unitSelect = document.getElementById("unitSelect");
+const slider = document.getElementById("slider");
+const swatch = document.getElementById("swatch");
+const swatchValue = document.getElementById("swatchValue");
+const swatchSubtitle = document.getElementById("swatchSubtitle");
+const rgbDisplay = document.getElementById("rgb");
+const hexDisplay = document.getElementById("hex");
+const frequencyDisplay = document.getElementById("frequency");
+const energyDisplay = document.getElementById("energy");
+const colourNameDisplay = document.getElementById("colourName");
+const lineMatchDisplay = document.getElementById("lineMatch");
+const markerContainer = document.getElementById("spectralMarkers");
+const lineSet = document.getElementById("lineSet");
+const cursor = document.getElementById("wavelengthCursor");
+const regionBadge = document.getElementById("regionBadge");
+const restLineSelect = document.getElementById("restLine");
+const redshiftInput = document.getElementById("redshift");
+const redshiftMode = document.getElementById("redshiftMode");
+const observedInput = document.getElementById("observedInput");
+const zField = document.getElementById("zField");
+const observedField = document.getElementById("observedField");
+const redshiftResult = document.getElementById("redshiftResult");
+const useObservedButton = document.getElementById("useObserved");
+const spectrumMode = document.getElementById("spectrumMode");
+const syntheticSpectrum = document.getElementById("syntheticSpectrum");
+const spectrumDescription = document.getElementById("spectrumDescription");
+const dopplerRestLine = document.getElementById("dopplerRestLine");
+const dopplerObserved = document.getElementById("dopplerObserved");
+const dopplerResult = document.getElementById("dopplerResult");
+const useMainWavelength = document.getElementById("useMainWavelength");
+const lineInfoTitle = document.getElementById("lineInfoTitle");
+const lineInfoDetail = document.getElementById("lineInfoDetail");
+const seriesSelect = document.getElementById("seriesSelect");
+const maxUpperN = document.getElementById("maxUpperN");
+const seriesDescription = document.getElementById("seriesDescription");
+const seriesTableBody = document.getElementById("seriesTableBody");
+const seriesLimit = document.getElementById("seriesLimit");
+const visualiserLineSet = document.getElementById("visualiserLineSet");
+const filterSet = document.getElementById("filterSet");
+const axisMode = document.getElementById("axisMode");
+const continuumSlope = document.getElementById("continuumSlope");
+const visualiserCanvas = document.getElementById("visualiserCanvas");
+const visualiserZ = document.getElementById("visualiserZ");
+const visualiserZReadout = document.getElementById("visualiserZReadout");
+const visualiserStatus = document.getElementById("visualiserStatus");
+const photometryGrid = document.getElementById("photometryGrid");
+const colourIndexList = document.getElementById("colourIndexList");
+const showFilterCurves = document.getElementById("showFilterCurves");
+const showReferenceLines = document.getElementById("showReferenceLines");
+const colourByWavelength = document.getElementById("colourByWavelength");
+const logFluxScale = document.getElementById("logFluxScale");
+const normaliseSpectrum = document.getElementById("normaliseSpectrum");
+const resetVisualiser = document.getElementById("resetVisualiser");
+const saveVisualiser = document.getElementById("saveVisualiser");
+const colourZSelect = document.getElementById("colourZSelect");
+const colourZCanvas = document.getElementById("colourZCanvas");
+const colourColourX = document.getElementById("colourColourX");
+const colourColourY = document.getElementById("colourColourY");
+const colourColourCanvas = document.getElementById("colourColourCanvas");
+const colourZSlider = document.getElementById("colourZSlider");
+const colourZSliderReadout = document.getElementById("colourZSliderReadout");
+const colourColourSlider = document.getElementById("colourColourSlider");
+const colourColourSliderReadout = document.getElementById("colourColourSliderReadout");
+const degeneracySummary = document.getElementById("degeneracySummary");
+const photozSigma = document.getElementById("photozSigma");
+const photozSigmaReadout = document.getElementById("photozSigmaReadout");
+const photozRegenerate = document.getElementById("photozRegenerate");
+const photozCanvas = document.getElementById("photozCanvas");
+const photozTrue = document.getElementById("photozTrue");
+const photozBest = document.getElementById("photozBest");
+const photozSecondary = document.getElementById("photozSecondary");
+const photozMessage = document.getElementById("photozMessage");
+const photozHoverReadout = document.getElementById("photozHoverReadout");
+
+const VISIBLE_MIN = 380;
+const VISIBLE_MAX = 780;
+const INPUT_MIN = 100;
+const INPUT_MAX = 2500;
+
+function unitLabel() {
+    if (unitSelect.value === "angstrom") return "Å";
+    if (unitSelect.value === "um") return "µm";
+    return "nm";
+}
+
+function nmToDisplay(nm) {
+    if (unitSelect.value === "angstrom") return nm * 10;
+    if (unitSelect.value === "um") return nm / 1000;
+    return nm;
+}
+
+function displayToNm(value) {
+    if (unitSelect.value === "angstrom") return value / 10;
+    if (unitSelect.value === "um") return value * 1000;
+    return value;
+}
+
+function wavelengthDecimals() {
+    if (unitSelect.value === "angstrom") return 1;
+    if (unitSelect.value === "um") return 4;
+    return 2;
+}
+
+function formatWavelength(nm) {
+    return `${nmToDisplay(nm).toFixed(wavelengthDecimals())} ${unitLabel()}`;
+}
+
+function configureWavelengthInput(nm) {
+    if (unitSelect.value === "angstrom") {
+        wavelengthInput.min = 1000;
+        wavelengthInput.max = 25000;
+        wavelengthInput.step = 1;
+    } else if (unitSelect.value === "um") {
+        wavelengthInput.min = 0.1;
+        wavelengthInput.max = 2.5;
+        wavelengthInput.step = 0.0001;
+    } else {
+        wavelengthInput.min = 100;
+        wavelengthInput.max = 2500;
+        wavelengthInput.step = 0.1;
+    }
+    wavelengthInput.value = nmToDisplay(nm).toFixed(wavelengthDecimals());
+}
+
+function wavelengthToRGB(wavelength) {
+
+    let r = 0;
+    let g = 0;
+    let b = 0;
+
+    if (wavelength >= 380 && wavelength < 440) {
+        r = -(wavelength - 440) / (440 - 380);
+        g = 0;
+        b = 1;
+    }
+    else if (wavelength >= 440 && wavelength < 490) {
+        r = 0;
+        g = (wavelength - 440) / (490 - 440);
+        b = 1;
+    }
+    else if (wavelength >= 490 && wavelength < 510) {
+        r = 0;
+        g = 1;
+        b = -(wavelength - 510) / (510 - 490);
+    }
+    else if (wavelength >= 510 && wavelength < 580) {
+        r = (wavelength - 510) / (580 - 510);
+        g = 1;
+        b = 0;
+    }
+    else if (wavelength >= 580 && wavelength < 645) {
+        r = 1;
+        g = -(wavelength - 645) / (645 - 580);
+        b = 0;
+    }
+    else if (wavelength >= 645 && wavelength <= 780) {
+        r = 1;
+        g = 0;
+        b = 0;
+    }
+
+    let factor;
+
+    if (wavelength >= 380 && wavelength < 420) {
+        factor = 0.3 + 0.7 * (wavelength - 380) / (420 - 380);
+    }
+    else if (wavelength >= 420 && wavelength <= 700) {
+        factor = 1;
+    }
+    else if (wavelength > 700 && wavelength <= 780) {
+        factor = 0.3 + 0.7 * (780 - wavelength) / (780 - 700);
+    }
+    else {
+        factor = 0;
+    }
+
+    const gamma = 0.8;
+
+    function convert(colour) {
+        if (colour === 0) return 0;
+
+        return Math.round(
+            255 * Math.pow(colour * factor, gamma)
+        );
+    }
+
+    return [convert(r), convert(g), convert(b)];
+}
+
+function rgbToHex(r, g, b) {
+    return "#" +
+        [r, g, b]
+        .map(x => x.toString(16).padStart(2, "0"))
+        .join("")
+        .toUpperCase();
+}
+
+function buildSpectrumGradient() {
+
+    const spectrum = document.getElementById("spectrum");
+    const step = 2;
+    const stops = [];
+
+    for (
+        let wavelength = VISIBLE_MIN;
+        wavelength <= VISIBLE_MAX;
+        wavelength += step
+    ) {
+        const [r, g, b] = wavelengthToRGB(wavelength);
+
+        const position =
+            ((wavelength - VISIBLE_MIN) /
+             (VISIBLE_MAX - VISIBLE_MIN)) * 100;
+
+        stops.push(
+            `rgb(${r}, ${g}, ${b}) ${position.toFixed(2)}%`
+        );
+    }
+
+    spectrum.style.background =
+        `linear-gradient(to right, ${stops.join(", ")})`;
+}
+
+function colourName(wavelength) {
+    if (wavelength < 380) return "Ultraviolet";
+    if (wavelength < 450) return "Violet";
+    if (wavelength < 485) return "Blue";
+    if (wavelength < 500) return "Cyan / blue-green";
+    if (wavelength < 565) return "Green";
+    if (wavelength < 590) return "Yellow";
+    if (wavelength < 625) return "Orange";
+    if (wavelength <= 780) return "Red";
+    if (wavelength <= 1400) return "Near-infrared";
+    return "Infrared";
+}
+
+function broadRegion(wavelength) {
+    if (wavelength < 380) return "UV";
+    if (wavelength <= 780) return "Visible";
+    if (wavelength <= 1400) return "Near-IR";
+    return "IR";
+}
+
+const spectralLines = [
+    { wavelength: 121.567, name: "Lyα", categories: ["hydrogen", "major"],
+      info: "Hydrogen Lyman α, transition n = 2 → 1. A strong ultraviolet line, especially important in high-redshift galaxies and quasars." },
+    { wavelength: 372.70, name: "[O II]", categories: ["nebular", "major"],
+      info: "Forbidden emission from singly ionised oxygen, O⁺. Often used as a tracer of ionised gas and star formation." },
+    { wavelength: 393.37, name: "Ca II K", categories: ["stellar", "major"],
+      info: "Calcium II K absorption line from singly ionised calcium. One of the prominent Fraunhofer lines in stellar spectra." },
+    { wavelength: 396.85, name: "Ca II H", categories: ["stellar", "major"],
+      info: "Calcium II H absorption line from singly ionised calcium. Closely paired with Ca II K." },
+    { wavelength: 410.17, name: "Hδ", categories: ["hydrogen"],
+      info: "Hydrogen Balmer δ, transition n = 6 → 2." },
+    { wavelength: 434.05, name: "Hγ", categories: ["hydrogen", "major"],
+      info: "Hydrogen Balmer γ, transition n = 5 → 2." },
+    { wavelength: 486.13, name: "Hβ", categories: ["hydrogen", "major"],
+      info: "Hydrogen Balmer β, transition n = 4 → 2. Strong in both stellar and nebular spectra." },
+    { wavelength: 495.89, name: "[O III]", categories: ["nebular"],
+      info: "Forbidden emission from doubly ionised oxygen, O²⁺. This is the weaker member of the familiar [O III] doublet." },
+    { wavelength: 500.68, name: "[O III]", categories: ["nebular", "major"],
+      info: "Forbidden emission from doubly ionised oxygen, O²⁺. One of the strongest optical emission lines in many nebulae and active galaxies." },
+    { wavelength: 517.00, name: "Mg b", categories: ["stellar"],
+      info: "The magnesium b absorption feature, prominent in many stellar spectra and useful in stellar-population studies." },
+    { wavelength: 587.56, name: "He I", categories: ["stellar", "nebular"],
+      info: "Neutral-helium emission/absorption line. Common in hot stars and ionised nebulae." },
+    { wavelength: 589.00, name: "Na D₂", categories: ["stellar", "major"],
+      info: "Sodium D₂ resonance line. A strong stellar/interstellar absorption feature." },
+    { wavelength: 589.59, name: "Na D₁", categories: ["stellar"],
+      info: "Sodium D₁ resonance line, paired with Na D₂." },
+    { wavelength: 630.03, name: "[O I]", categories: ["nebular"],
+      info: "Forbidden emission from neutral oxygen, often produced in low-density partially ionised gas." },
+    { wavelength: 654.80, name: "[N II]", categories: ["nebular"],
+      info: "Forbidden emission from singly ionised nitrogen, N⁺. One component of the [N II] doublet beside Hα." },
+    { wavelength: 656.28, name: "Hα", categories: ["hydrogen", "major"],
+      info: "Hydrogen Balmer α, transition n = 3 → 2. Usually the strongest Balmer line in optical emission spectra." },
+    { wavelength: 658.34, name: "[N II]", categories: ["nebular", "major"],
+      info: "Forbidden emission from singly ionised nitrogen, N⁺. The stronger optical [N II] line near Hα." },
+    { wavelength: 671.64, name: "[S II]", categories: ["nebular"],
+      info: "Forbidden emission from singly ionised sulfur, S⁺. Together with 673.08 nm, this forms the density-sensitive [S II] doublet." },
+    { wavelength: 673.08, name: "[S II]", categories: ["nebular", "major"],
+      info: "Forbidden emission from singly ionised sulfur, S⁺. The 671.64/673.08 nm ratio is commonly used to diagnose electron density." },
+    { wavelength: 849.80, name: "Ca II", categories: ["stellar"],
+      info: "One line of the near-infrared Ca II triplet, prominent in many cool-star spectra." },
+    { wavelength: 854.21, name: "Ca II", categories: ["stellar"],
+      info: "The strongest line of the near-infrared Ca II triplet." },
+    { wavelength: 866.21, name: "Ca II", categories: ["stellar"],
+      info: "One line of the near-infrared Ca II triplet." }
+];
+
+function showLineInfo(line) {
+
+    lineInfoTitle.textContent =
+        `${line.name} — ${formatWavelength(line.wavelength)}`;
+
+    lineInfoDetail.textContent =
+        line.info || "No additional information is available for this line.";
+}
+
+function filteredVisibleLines() {
+
+    const selected = lineSet.value;
+
+    return spectralLines.filter(line => {
+
+        const visible =
+            line.wavelength >= VISIBLE_MIN &&
+            line.wavelength <= VISIBLE_MAX;
+
+        if (!visible) return false;
+
+        if (selected === "all") return true;
+
+        return line.categories.includes(selected);
+    });
+}
+
+function setMainWavelength(wavelength) {
+
+    const clamped =
+        Math.max(INPUT_MIN, Math.min(INPUT_MAX, wavelength));
+
+    configureWavelengthInput(clamped);
+    update();
+}
+
+function drawSpectralMarkers() {
+
+    markerContainer.innerHTML = "";
+
+    const lines = filteredVisibleLines();
+
+    lines.forEach((line, index) => {
+
+        const position =
+            ((line.wavelength - VISIBLE_MIN) /
+             (VISIBLE_MAX - VISIBLE_MIN)) * 100;
+
+        const marker =
+            document.createElement("button");
+
+        marker.type = "button";
+        marker.className = "spectral-marker";
+        marker.style.left = `${position}%`;
+
+        const wavelengthText =
+            `${line.name}: ${line.wavelength.toFixed(2)} nm`;
+
+        marker.title = wavelengthText;
+        marker.setAttribute("aria-label", `Set wavelength to ${wavelengthText}`);
+
+        marker.addEventListener("click", () => {
+            setMainWavelength(line.wavelength);
+            showLineInfo(line);
+        });
+
+        const label =
+            document.createElement("button");
+
+        label.type = "button";
+        label.className =
+            "spectral-marker-label " +
+            (index % 2 === 0 ? "row-1" : "row-2");
+
+        label.style.left = `${position}%`;
+        label.textContent = line.name;
+        label.title = wavelengthText;
+        label.setAttribute("aria-label", `Set wavelength to ${wavelengthText}`);
+
+        label.addEventListener("click", () => {
+            setMainWavelength(line.wavelength);
+            showLineInfo(line);
+        });
+
+        markerContainer.appendChild(marker);
+        markerContainer.appendChild(label);
+    });
+}
+
+function buildSyntheticSpectrum() {
+
+    syntheticSpectrum.innerHTML = "";
+
+    const mode = spectrumMode.value;
+    const lines = filteredVisibleLines();
+
+    if (mode === "absorption") {
+        const stops = [];
+
+        for (let wavelength = VISIBLE_MIN;
+             wavelength <= VISIBLE_MAX;
+             wavelength += 2) {
+
+            const [r, g, b] = wavelengthToRGB(wavelength);
+            const position =
+                ((wavelength - VISIBLE_MIN) /
+                 (VISIBLE_MAX - VISIBLE_MIN)) * 100;
+
+            stops.push(
+                `rgb(${r}, ${g}, ${b}) ${position.toFixed(2)}%`
+            );
+        }
+
+        syntheticSpectrum.style.background =
+            `linear-gradient(to right, ${stops.join(", ")})`;
+
+        lines.forEach(line => {
+            const position =
+                ((line.wavelength - VISIBLE_MIN) /
+                 (VISIBLE_MAX - VISIBLE_MIN)) * 100;
+
+            const stripe = document.createElement("div");
+            stripe.className = "synthetic-line";
+            stripe.style.left = `${position}%`;
+            stripe.style.width = "4px";
+            stripe.style.background =
+                "rgba(0, 0, 0, 0.90)";
+            stripe.title =
+                `${line.name}: ${formatWavelength(line.wavelength)}`;
+
+            syntheticSpectrum.appendChild(stripe);
+        });
+
+        spectrumDescription.textContent =
+            "Dark lines mark wavelengths removed from an otherwise continuous visible spectrum.";
+    }
+    else {
+        syntheticSpectrum.style.background = "#030712";
+
+        lines.forEach(line => {
+            const position =
+                ((line.wavelength - VISIBLE_MIN) /
+                 (VISIBLE_MAX - VISIBLE_MIN)) * 100;
+
+            const [r, g, b] = wavelengthToRGB(line.wavelength);
+
+            const glow = document.createElement("div");
+            glow.className = "synthetic-line";
+            glow.style.left = `${position}%`;
+            glow.style.width = "12px";
+            glow.style.background =
+                `rgba(${r}, ${g}, ${b}, 0.18)`;
+            glow.style.filter = "blur(4px)";
+
+            const stripe = document.createElement("div");
+            stripe.className = "synthetic-line";
+            stripe.style.left = `${position}%`;
+            stripe.style.width = "3px";
+            stripe.style.background =
+                `rgb(${r}, ${g}, ${b})`;
+            stripe.style.boxShadow =
+                `0 0 8px rgb(${r}, ${g}, ${b})`;
+            stripe.title =
+                `${line.name}: ${formatWavelength(line.wavelength)}`;
+
+            syntheticSpectrum.appendChild(glow);
+            syntheticSpectrum.appendChild(stripe);
+        });
+
+        spectrumDescription.textContent =
+            "Bright lines mark wavelengths emitted against a dark background.";
+    }
+}
+
+function findSpectralLine(wavelength) {
+
+    const tolerance = 0.5;
+    let closest = null;
+    let minimumDifference = Infinity;
+
+    for (const line of spectralLines) {
+
+        const difference =
+            Math.abs(wavelength - line.wavelength);
+
+        if (difference < minimumDifference) {
+            minimumDifference = difference;
+            closest = line;
+        }
+    }
+
+    if (minimumDifference <= tolerance) {
+        return closest;
+    }
+
+    return null;
+}
+
+function formatFrequency(value) {
+    return value.toExponential(3) + " Hz";
+}
+
+function updateCursor(wavelength) {
+
+    if (
+        wavelength >= VISIBLE_MIN &&
+        wavelength <= VISIBLE_MAX
+    ) {
+        const position =
+            ((wavelength - VISIBLE_MIN) /
+             (VISIBLE_MAX - VISIBLE_MIN)) * 100;
+
+        cursor.style.display = "block";
+        cursor.style.left = `${position}%`;
+
+        slider.disabled = false;
+        slider.value = wavelength;
+    }
+    else {
+        cursor.style.display = "none";
+        slider.disabled = true;
+    }
+}
+
+function update() {
+
+    let displayedWavelength = parseFloat(wavelengthInput.value);
+
+    if (!Number.isFinite(displayedWavelength)) return;
+
+    let wavelength = displayToNm(displayedWavelength);
+
+    wavelength =
+        Math.max(INPUT_MIN, Math.min(INPUT_MAX, wavelength));
+
+    updateCursor(wavelength);
+
+    const c = 299792458;
+    const h = 6.62607015e-34;
+    const electronVolt = 1.602176634e-19;
+    const lambdaMetres = wavelength * 1e-9;
+    const frequency = c / lambdaMetres;
+    const energyJ = h * frequency;
+    const energyEV = energyJ / electronVolt;
+
+    const region = broadRegion(wavelength);
+    const colour = colourName(wavelength);
+
+    regionBadge.textContent = region;
+    colourNameDisplay.textContent = colour;
+
+    if (
+        wavelength >= VISIBLE_MIN &&
+        wavelength <= VISIBLE_MAX
+    ) {
+        const [r, g, b] = wavelengthToRGB(wavelength);
+        const hex = rgbToHex(r, g, b);
+
+        swatch.style.backgroundColor =
+            `rgb(${r}, ${g}, ${b})`;
+
+        swatchValue.textContent = formatWavelength(wavelength);
+        swatchSubtitle.textContent = colour;
+
+        rgbDisplay.textContent = `${r}, ${g}, ${b}`;
+        hexDisplay.textContent = hex;
+    }
+    else {
+        swatch.style.backgroundColor = "#374151";
+        swatchValue.textContent = formatWavelength(wavelength);
+
+        swatchSubtitle.textContent =
+            `${colour} — outside visible spectrum`;
+
+        rgbDisplay.textContent = "Not applicable";
+        hexDisplay.textContent = "Not applicable";
+    }
+
+    frequencyDisplay.textContent = formatFrequency(frequency);
+    energyDisplay.textContent = energyEV.toFixed(3) + " eV";
+
+    const line = findSpectralLine(wavelength);
+
+    if (line) {
+        lineMatchDisplay.innerHTML =
+            `<strong>${line.name}</strong>
+             &nbsp;—&nbsp;
+             ${formatWavelength(line.wavelength)}`;
+    }
+    else {
+        lineMatchDisplay.textContent =
+            "No reference line within ±0.5 nm";
+    }
+}
+
+function populateRestLineSelect() {
+
+    const previous =
+        restLineSelect.selectedIndex >= 0
+        ? restLineSelect.value
+        : null;
+
+    restLineSelect.innerHTML = "";
+
+    spectralLines.forEach((line, index) => {
+
+        const option = document.createElement("option");
+
+        option.value = index;
+        option.textContent =
+            `${line.name} — ${formatWavelength(line.wavelength)}`;
+
+        if (
+            previous !== null
+            ? String(index) === previous
+            : line.name === "Hα"
+        ) {
+            option.selected = true;
+        }
+
+        restLineSelect.appendChild(option);
+    });
+}
+
+function hydrogenWavelengthNm(nLower, nUpper) {
+
+    // Rydberg constant for hydrogen, m^-1
+    const RH = 1.0967758e7;
+
+    const inverseLambda =
+        RH * (
+            1 / (nLower * nLower) -
+            1 / (nUpper * nUpper)
+        );
+
+    return (1 / inverseLambda) * 1e9;
+}
+
+function hydrogenSeriesName(nLower) {
+    if (nLower === 1) return "Lyman";
+    if (nLower === 2) return "Balmer";
+    if (nLower === 3) return "Paschen";
+    return `n = ${nLower}`;
+}
+
+function hydrogenLineLabel(nLower, nUpper) {
+
+    const offset = nUpper - nLower;
+
+    const greek = {
+        1: "α",
+        2: "β",
+        3: "γ",
+        4: "δ"
+    };
+
+    const suffix = greek[offset] || `${offset}`;
+
+    return `${hydrogenSeriesName(nLower)} ${suffix}`;
+}
+
+function updateHydrogenSeries() {
+
+    const nLower =
+        parseInt(seriesSelect.value, 10);
+
+    let nMax =
+        parseInt(maxUpperN.value, 10);
+
+    if (!Number.isFinite(nMax)) nMax = nLower + 6;
+
+    nMax = Math.max(nLower + 1, Math.min(20, nMax));
+    maxUpperN.value = nMax;
+
+    seriesTableBody.innerHTML = "";
+
+    for (let nUpper = nLower + 1;
+         nUpper <= nMax;
+         nUpper++) {
+
+        const wavelength =
+            hydrogenWavelengthNm(nLower, nUpper);
+
+        const row =
+            document.createElement("tr");
+
+        const transition =
+            document.createElement("td");
+
+        const wavelengthCell =
+            document.createElement("td");
+
+        const regionCell =
+            document.createElement("td");
+
+        transition.textContent =
+            `${hydrogenLineLabel(nLower, nUpper)}: ${nUpper} → ${nLower}`;
+
+        wavelengthCell.textContent =
+            formatWavelength(wavelength);
+
+        regionCell.textContent =
+            broadRegion(wavelength);
+
+        row.appendChild(transition);
+        row.appendChild(wavelengthCell);
+        row.appendChild(regionCell);
+
+        seriesTableBody.appendChild(row);
+    }
+
+    const limitWavelength =
+        (1 / (
+            1.0967758e7 *
+            (1 / (nLower * nLower))
+        )) * 1e9;
+
+    seriesDescription.innerHTML =
+        `${hydrogenSeriesName(nLower)} series:
+         transitions from n &gt; ${nLower} down to n = ${nLower}.`;
+
+    seriesLimit.innerHTML =
+        `<strong>Series limit:</strong>
+         ${formatWavelength(limitWavelength)}
+         (${broadRegion(limitWavelength)})`;
+}
+
+const filterProfiles = {
+    sdss: [
+        {name:"u", centre:355.1, fwhm:57.0},
+        {name:"g", centre:468.6, fwhm:137.0},
+        {name:"r", centre:616.5, fwhm:137.0},
+        {name:"i", centre:748.1, fwhm:153.0},
+        {name:"z", centre:893.1, fwhm:95.0}
+    ],
+    legacy: [
+        {name:"g", centre:477, fwhm:140},
+        {name:"r", centre:641, fwhm:145},
+        {name:"z", centre:917, fwhm:145}
+    ],
+    galex: [
+        {name:"FUV", centre:151.6, fwhm:26.9},
+        {name:"NUV", centre:226.7, fwhm:61.6}
+    ],
+    wise: [
+        {name:"W1", centre:3350, fwhm:660},
+        {name:"W2", centre:4600, fwhm:1040}
+    ]
+};
+
+const quasarLines = [
+    {name:"Lyα", wavelength:121.567, strength:1.00, width:10},
+    {name:"C IV", wavelength:154.9, strength:0.62, width:13},
+    {name:"C III]", wavelength:190.9, strength:0.42, width:15},
+    {name:"Mg II", wavelength:279.8, strength:0.55, width:20},
+    {name:"Hβ", wavelength:486.13, strength:0.38, width:24},
+    {name:"[O III]", wavelength:500.68, strength:0.20, width:5},
+    {name:"Hα", wavelength:656.28, strength:0.65, width:32}
+];
+
+function gaussian(x, centre, fwhm) {
+    const sigma = fwhm / 2.35482;
+    return Math.exp(-0.5 * Math.pow((x - centre) / sigma, 2));
+}
+
+function filtersForSelection() {
+    const s = filterSet.value;
+
+    if (s === "none") return [];
+
+    if (s === "phd") {
+        return [
+            ...filterProfiles.galex.map(x => ({...x, family:"GALEX"})),
+            ...filterProfiles.sdss.map(x => ({...x, family:"SDSS"})),
+            ...filterProfiles.legacy.map(x => ({...x, family:"Legacy"})),
+            ...filterProfiles.wise.map(x => ({...x, family:"WISE"}))
+        ];
+    }
+
+    const familyName =
+        s === "legacy" ? "Legacy" :
+        s === "galex" ? "GALEX" :
+        s === "wise" ? "WISE" :
+        "SDSS";
+
+    return (filterProfiles[s] || []).map(x => ({
+        ...x,
+        family: familyName
+    }));
+}
+
+function visualiserAxisRange() {
+    if (axisMode.value === "uvopt") return [100, 1100];
+    if (axisMode.value === "optnir") return [300, 2500];
+    if (axisMode.value === "wide") return [100, 5500];
+
+    if (filterSet.value === "galex") return [100, 320];
+    if (filterSet.value === "wise") return [2500, 5500];
+    if (filterSet.value === "phd") return [100, 5500];
+
+    return [280, 1100];
+}
+
+
+
+function wavelengthDisplayColour(wavelengthNm) {
+
+    if (
+        wavelengthNm >= VISIBLE_MIN &&
+        wavelengthNm <= VISIBLE_MAX
+    ) {
+        const [r, g, b] =
+            wavelengthToRGB(wavelengthNm);
+
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    if (wavelengthNm < VISIBLE_MIN) {
+        return "#a855f7";
+    }
+
+    // Beyond the visible range, keep the wavelength ordering intuitive:
+    // near-IR starts bright red/pink and darkens towards mid-IR.
+    const t =
+        Math.max(
+            0,
+            Math.min(
+                1,
+                (wavelengthNm - VISIBLE_MAX) /
+                (5500 - VISIBLE_MAX)
+            )
+        );
+
+    const r = Math.round(255 - 115 * t);
+    const g = Math.round(75 - 50 * t);
+    const b = Math.round(65 - 45 * t);
+
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+function quasarTransmissionRest(restNm, z) {
+    if (restNm >= 121.6) return 1;
+    if (restNm < 91.2) return 0.015;
+
+    const forestDepth = Math.max(0, Math.min(1,
+        (121.6 - restNm) / (121.6 - 91.2)));
+    const redshiftStrength = Math.max(0.15, Math.min(0.95,
+        0.18 + 0.15 * z));
+
+    return Math.max(0.04,
+        1 - redshiftStrength * (0.45 + 0.55 * forestDepth));
+}
+
+function quasarModelFluxObserved(observedNm, z, alpha) {
+    const restNm = observedNm / (1 + z);
+    const exponent = -alpha - 2;
+
+    let continuum = Math.pow(Math.max(restNm, 50) / 500, exponent);
+    continuum *= quasarTransmissionRest(restNm, z);
+
+    let lineFlux = 0;
+    quasarLines.forEach(line => {
+        const obsCentre = line.wavelength * (1 + z);
+        const obsWidth = line.width * (1 + z);
+        const attenuation = line.wavelength < 121.6
+            ? quasarTransmissionRest(line.wavelength, z)
+            : 1;
+
+        lineFlux += attenuation * line.strength * 2.5 *
+            gaussian(observedNm, obsCentre, obsWidth);
+    });
+
+    return continuum + lineFlux;
+}
+
+function integrateBandFlux(filter, z, alpha) {
+    const start = Math.max(50, filter.centre - 4 * filter.fwhm);
+    const end = filter.centre + 4 * filter.fwhm;
+    const steps = 500;
+    const dx = (end - start) / steps;
+
+    let weightedFlux = 0;
+    let responseArea = 0;
+
+    for (let i = 0; i <= steps; i++) {
+        const wavelength = start + i * dx;
+        const response = gaussian(
+            wavelength,
+            filter.centre,
+            filter.fwhm
+        );
+        const sourceFlux = quasarModelFluxObserved(
+            wavelength,
+            z,
+            alpha
+        );
+        const weight = (i === 0 || i === steps) ? 0.5 : 1;
+
+        weightedFlux += weight * sourceFlux * response;
+        responseArea += weight * response;
+    }
+
+    return responseArea > 0
+        ? weightedFlux / responseArea
+        : 0;
+}
+
+function updateSyntheticPhotometry() {
+
+    photometryGrid.innerHTML = "";
+    colourIndexList.innerHTML = "";
+
+    const filters = filtersForSelection();
+
+    if (
+        filters.length === 0 ||
+        visualiserLineSet.value !== "quasar"
+    ) {
+        photometryGrid.innerHTML =
+            '<div class="small-note" style="padding:12px;">Select a filter set and the Simple quasar spectrum.</div>';
+
+        colourIndexList.innerHTML =
+            '<div class="small-note" style="padding:12px;">Colour indices appear here for the quasar model.</div>';
+
+        return;
+    }
+
+    const z =
+        parseFloat(visualiserZ.value) || 0;
+
+    const alphaRaw =
+        parseFloat(continuumSlope.value);
+
+    const alpha =
+        Number.isFinite(alphaRaw)
+        ? alphaRaw
+        : -0.5;
+
+    const results =
+        filters.map(filter => ({
+            ...filter,
+            flux: integrateBandFlux(
+                filter,
+                z,
+                alpha
+            )
+        }));
+
+    const maxFlux =
+        Math.max(
+            ...results.map(r => r.flux),
+            1e-12
+        );
+
+    results.forEach(result => {
+
+        const relative =
+            result.flux / maxFlux;
+
+        const colour =
+            wavelengthDisplayColour(
+                result.centre
+            );
+
+        const card =
+            document.createElement("div");
+
+        card.className =
+            "photometry-card";
+
+        const band =
+            document.createElement("div");
+
+        band.className =
+            "photometry-band";
+
+        band.style.color = colour;
+
+        band.textContent =
+            result.family === "SDSS"
+            ? result.name
+            : `${result.family} ${result.name}`;
+
+        const value =
+            document.createElement("div");
+
+        value.className =
+            "photometry-value";
+
+        value.style.color = colour;
+
+        value.textContent =
+            relative.toFixed(3);
+
+        card.appendChild(band);
+        card.appendChild(value);
+
+        photometryGrid.appendChild(card);
+    });
+
+    for (
+        let i = 0;
+        i < results.length - 1;
+        i++
+    ) {
+        const a = results[i];
+        const b = results[i + 1];
+
+        if (
+            a.flux <= 0 ||
+            b.flux <= 0
+        ) continue;
+
+        const colourIndex =
+            -2.5 *
+            Math.log10(
+                a.flux / b.flux
+            );
+
+        const chip =
+            document.createElement("div");
+
+        chip.className =
+            "colour-index-chip";
+
+        const c1 =
+            wavelengthDisplayColour(
+                a.centre
+            );
+
+        const c2 =
+            wavelengthDisplayColour(
+                b.centre
+            );
+
+        chip.innerHTML =
+            `<strong style="color:${c1}">${a.name}</strong>` +
+            ` − ` +
+            `<strong style="color:${c2}">${b.name}</strong>` +
+            `<br><span style="font-size:17px;">${colourIndex.toFixed(2)}</span>`;
+
+        colourIndexList.appendChild(chip);
+    }
+}
+
+function populateColourZSelect() {
+    const filters = filtersForSelection();
+    const previous = colourZSelect.value;
+    colourZSelect.innerHTML = "";
+
+    if (filters.length < 2) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Select at least two filters";
+        colourZSelect.appendChild(option);
+        colourZSelect.disabled = true;
+        return;
+    }
+
+    colourZSelect.disabled = false;
+
+    for (let i = 0; i < filters.length - 1; i++) {
+        const a = filters[i], b = filters[i + 1];
+        const option = document.createElement("option");
+        option.value = `${i}:${i+1}`;
+        option.textContent = `${a.name} − ${b.name}`;
+        colourZSelect.appendChild(option);
+    }
+
+    if (Array.from(colourZSelect.options).some(o => o.value === previous))
+        colourZSelect.value = previous;
+}
+
+function colourIndexAtZ(a, b, z, alpha) {
+    const fa = integrateBandFlux(a, z, alpha);
+    const fb = integrateBandFlux(b, z, alpha);
+    return (fa > 0 && fb > 0) ? -2.5 * Math.log10(fa / fb) : NaN;
+}
+
+function drawColourZTrack() {
+    populateColourZSelect();
+
+    const filters = filtersForSelection();
+    const rect = colourZCanvas.getBoundingClientRect();
+    const W = Math.max(520, rect.width || 900), H = 260;
+    const dpr = window.devicePixelRatio || 1;
+    colourZCanvas.width = Math.round(W * dpr);
+    colourZCanvas.height = Math.round(H * dpr);
+
+    const ctx = colourZCanvas.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.fillStyle = "#030712";
+    ctx.fillRect(0,0,W,H);
+
+    if (filters.length < 2 || !colourZSelect.value) {
+        colourZHitPoints = [];
+        ctx.fillStyle = "#9ca3af";
+        ctx.font = "14px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Select a filter set containing at least two bands.", W/2, H/2);
+        return;
+    }
+
+    const [ia, ib] = colourZSelect.value.split(":").map(Number);
+    const a = filters[ia], b = filters[ib];
+    const alphaRaw = parseFloat(continuumSlope.value);
+    const alpha = Number.isFinite(alphaRaw) ? alphaRaw : -0.5;
+
+    const samples = [];
+    let ymin = Infinity, ymax = -Infinity;
+
+    for (let i = 0; i <= 100; i++) {
+        const z = i * 0.05;
+        const c = colourIndexAtZ(a,b,z,alpha);
+        if (Number.isFinite(c)) {
+            samples.push([z,c]);
+            ymin = Math.min(ymin,c);
+            ymax = Math.max(ymax,c);
+        }
+    }
+
+    if (!samples.length) {
+        colourZHitPoints = [];
+        return;
+    }
+    if (Math.abs(ymax-ymin) < 0.2) { ymin -= 0.1; ymax += 0.1; }
+    const pad = 0.12 * (ymax-ymin);
+    ymin -= pad; ymax += pad;
+
+    const m = {left:58,right:18,top:22,bottom:42};
+    const pw = W-m.left-m.right, ph = H-m.top-m.bottom;
+    const xp = z => m.left + z/5*pw;
+    const yp = c => m.top + (ymax-c)/(ymax-ymin)*ph;
+
+    ctx.strokeStyle = "rgba(255,255,255,.12)";
+    ctx.fillStyle = "#9ca3af";
+    ctx.font = "11px Arial";
+
+    for (let i=0;i<=5;i++) {
+        const x=xp(i);
+        ctx.beginPath(); ctx.moveTo(x,m.top); ctx.lineTo(x,m.top+ph); ctx.stroke();
+        ctx.textAlign="center"; ctx.fillText(String(i),x,H-16);
+    }
+    for (let i=0;i<=4;i++) {
+        const v=ymin+i*(ymax-ymin)/4, y=yp(v);
+        ctx.beginPath(); ctx.moveTo(m.left,y); ctx.lineTo(m.left+pw,y); ctx.stroke();
+        ctx.textAlign="right"; ctx.fillText(v.toFixed(2),m.left-7,y+4);
+    }
+
+    ctx.beginPath();
+    samples.forEach(([z,c],i) => {
+        if (i===0) ctx.moveTo(xp(z),yp(c)); else ctx.lineTo(xp(z),yp(c));
+    });
+    ctx.strokeStyle = wavelengthDisplayColour((a.centre+b.centre)/2);
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Cache the actual colour-z screen coordinates for click/hover hit-testing.
+    colourZHitPoints = samples.map(([z, c]) => ({
+        z,
+        value: c,
+        px: xp(z),
+        py: yp(c)
+    }));
+
+    const currentZ = parseFloat(visualiserZ.value) || 0;
+    const currentC = colourIndexAtZ(a,b,currentZ,alpha);
+
+    if (Number.isFinite(currentC)) {
+        const x=xp(currentZ), y=yp(currentC);
+        ctx.strokeStyle="rgba(255,255,255,.35)";
+        ctx.setLineDash([4,4]);
+        ctx.beginPath(); ctx.moveTo(x,m.top); ctx.lineTo(x,m.top+ph); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle="#fff";
+        ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle="#e5e7eb";
+        ctx.font="bold 12px Arial";
+        ctx.textAlign="left";
+        ctx.fillText(`z=${currentZ.toFixed(2)}, ${a.name}−${b.name}=${currentC.toFixed(2)}`,
+            Math.min(x+8,W-185), Math.max(m.top+14,y-8));
+    }
+
+    ctx.strokeStyle="rgba(255,255,255,.35)";
+    ctx.strokeRect(m.left,m.top,pw,ph);
+
+    ctx.fillStyle="#d1d5db";
+    ctx.font="12px Arial";
+    ctx.textAlign="center";
+    ctx.fillText("Redshift z",m.left+pw/2,H-2);
+
+    ctx.save();
+    ctx.translate(14,m.top+ph/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.fillText(`${a.name} − ${b.name}`,0,0);
+    ctx.restore();
+}
+
+
+
+let colourZHitPoints = [];
+let colourColourHitPoints = [];
+let colourColourDegeneratePair = null;
+
+function nearestTrackPoint(points, px, py, maxDistance = 18) {
+    let best = null;
+    let bestD2 = maxDistance * maxDistance;
+
+    for (const p of points) {
+        const dx = p.px - px;
+        const dy = p.py - py;
+        const d2 = dx * dx + dy * dy;
+
+        if (d2 <= bestD2) {
+            bestD2 = d2;
+            best = p;
+        }
+    }
+
+    return best;
+}
+
+function canvasPointerPosition(canvas, event) {
+    const rect = canvas.getBoundingClientRect();
+
+    return {
+        x: (event.clientX - rect.left) * (canvas.clientWidth / rect.width),
+        y: (event.clientY - rect.top) * (canvas.clientHeight / rect.height)
+    };
+}
+
+function findColourColourDegeneracy(points) {
+    let best = null;
+
+    // Require a meaningful redshift separation so neighbouring samples
+    // along the same smooth track do not count as a "degeneracy".
+    const minDz = 0.45;
+
+    for (let i = 0; i < points.length; i++) {
+        for (let j = i + 1; j < points.length; j++) {
+            const a = points[i];
+            const b = points[j];
+
+            if (Math.abs(a.z - b.z) < minDz) continue;
+
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const distance = Math.hypot(dx, dy);
+
+            if (!best || distance < best.distance) {
+                best = {a, b, distance};
+            }
+        }
+    }
+
+    return best;
+}
+
+function colourPairLabel(a, b) {
+    return `${a.name} − ${b.name}`;
+}
+
+function colourPairValue(pairValue, filters, z, alpha) {
+    if (!pairValue) return NaN;
+
+    const [ia, ib] =
+        pairValue.split(":").map(Number);
+
+    const a = filters[ia];
+    const b = filters[ib];
+
+    if (!a || !b) return NaN;
+
+    return colourIndexAtZ(
+        a,
+        b,
+        z,
+        alpha
+    );
+}
+
+function buildColourPairOptions(filters) {
+
+    const options = [];
+
+    for (let i = 0; i < filters.length; i++) {
+        for (let j = i + 1; j < filters.length; j++) {
+            options.push({
+                value: `${i}:${j}`,
+                label: colourPairLabel(filters[i], filters[j]),
+                i,
+                j
+            });
+        }
+    }
+
+    return options;
+}
+
+function presetColourPairs(filters) {
+
+    const names =
+        filters.map(f => f.name);
+
+    const findPair = (aName, bName) => {
+
+        const ia =
+            names.indexOf(aName);
+
+        const ib =
+            names.indexOf(bName);
+
+        if (
+            ia < 0 ||
+            ib < 0
+        ) return null;
+
+        return `${ia}:${ib}`;
+    };
+
+    const filterMode =
+        filterSet.value;
+
+    if (filterMode === "sdss") {
+        return {
+            x: findPair("g", "r"),
+            y: findPair("u", "g")
+        };
+    }
+
+    if (filterMode === "legacy") {
+        return {
+            x: findPair("r", "z"),
+            y: findPair("g", "r")
+        };
+    }
+
+    if (filterMode === "galex") {
+        return {
+            x: findPair("FUV", "NUV"),
+            y: findPair("FUV", "NUV")
+        };
+    }
+
+    if (filterMode === "wise") {
+        return {
+            x: findPair("W1", "W2"),
+            y: findPair("W1", "W2")
+        };
+    }
+
+    // Combined filter set: prefer a traditional optical colour
+    // against an optical-IR colour if those bands are present.
+    if (filterMode === "phd") {
+
+        let gIndex = -1;
+        let rIndex = -1;
+        let zIndex = -1;
+        let w1Index = -1;
+
+        filters.forEach((f, idx) => {
+            if (f.family === "Legacy" && f.name === "g") gIndex = idx;
+            if (f.family === "Legacy" && f.name === "r") rIndex = idx;
+            if (f.family === "Legacy" && f.name === "z") zIndex = idx;
+            if (f.family === "WISE" && f.name === "W1") w1Index = idx;
+        });
+
+        return {
+            x:
+                (rIndex >= 0 && zIndex >= 0)
+                ? `${rIndex}:${zIndex}`
+                : null,
+            y:
+                (zIndex >= 0 && w1Index >= 0)
+                ? `${zIndex}:${w1Index}`
+                : null
+        };
+    }
+
+    return {x:null, y:null};
+}
+
+function populateColourColourSelectors() {
+
+    const filters =
+        filtersForSelection();
+
+    const previousX =
+        colourColourX.value;
+
+    const previousY =
+        colourColourY.value;
+
+    colourColourX.innerHTML = "";
+    colourColourY.innerHTML = "";
+
+    if (filters.length < 2) {
+
+        [colourColourX, colourColourY]
+        .forEach(select => {
+            const option =
+                document.createElement("option");
+
+            option.value = "";
+            option.textContent =
+                "Select at least two filters";
+
+            select.appendChild(option);
+            select.disabled = true;
+        });
+
+        return;
+    }
+
+    colourColourX.disabled = false;
+    colourColourY.disabled = false;
+
+    const options =
+        buildColourPairOptions(filters);
+
+    options.forEach(item => {
+
+        [colourColourX, colourColourY]
+        .forEach(select => {
+
+            const option =
+                document.createElement("option");
+
+            option.value =
+                item.value;
+
+            option.textContent =
+                item.label;
+
+            select.appendChild(option);
+        });
+    });
+
+    const presets =
+        presetColourPairs(filters);
+
+    const validX =
+        options.some(
+            item =>
+            item.value === previousX
+        );
+
+    const validY =
+        options.some(
+            item =>
+            item.value === previousY
+        );
+
+    colourColourX.value =
+        validX
+        ? previousX
+        : (
+            presets.x ||
+            options[0].value
+        );
+
+    let yCandidate =
+        validY
+        ? previousY
+        : (
+            presets.y ||
+            (
+                options[1]
+                ? options[1].value
+                : options[0].value
+            )
+        );
+
+    // Avoid identical axes when there is another choice.
+    if (
+        yCandidate === colourColourX.value &&
+        options.length > 1
+    ) {
+        const alternative =
+            options.find(
+                item =>
+                item.value !==
+                colourColourX.value
+            );
+
+        if (alternative) {
+            yCandidate =
+                alternative.value;
+        }
+    }
+
+    colourColourY.value =
+        yCandidate;
+}
+
+function drawColourColourDiagram() {
+
+    populateColourColourSelectors();
+
+    const filters =
+        filtersForSelection();
+
+    const rect =
+        colourColourCanvas
+        .getBoundingClientRect();
+
+    const W =
+        Math.max(
+            520,
+            rect.width || 900
+        );
+
+    const H = 320;
+    const dpr =
+        window.devicePixelRatio || 1;
+
+    colourColourCanvas.width =
+        Math.round(W * dpr);
+
+    colourColourCanvas.height =
+        Math.round(H * dpr);
+
+    const ctx =
+        colourColourCanvas
+        .getContext("2d");
+
+    ctx.setTransform(
+        dpr, 0, 0, dpr, 0, 0
+    );
+
+    ctx.fillStyle = "#030712";
+    ctx.fillRect(0,0,W,H);
+
+    if (
+        filters.length < 2 ||
+        !colourColourX.value ||
+        !colourColourY.value
+    ) {
+        colourColourHitPoints = [];
+        colourColourDegeneratePair = null;
+        degeneracySummary.textContent =
+            "Select at least two filters to search for colour degeneracies.";
+        ctx.fillStyle = "#9ca3af";
+        ctx.font = "14px Arial";
+        ctx.textAlign = "center";
+
+        ctx.fillText(
+            "Select a filter set containing at least two bands.",
+            W / 2,
+            H / 2
+        );
+
+        return;
+    }
+
+    const alphaRaw =
+        parseFloat(
+            continuumSlope.value
+        );
+
+    const alpha =
+        Number.isFinite(alphaRaw)
+        ? alphaRaw
+        : -0.5;
+
+    const points = [];
+
+    let xmin = Infinity;
+    let xmax = -Infinity;
+    let ymin = Infinity;
+    let ymax = -Infinity;
+
+    for (
+        let i = 0;
+        i <= 100;
+        i++
+    ) {
+        const z =
+            i * 0.05;
+
+        const x =
+            colourPairValue(
+                colourColourX.value,
+                filters,
+                z,
+                alpha
+            );
+
+        const y =
+            colourPairValue(
+                colourColourY.value,
+                filters,
+                z,
+                alpha
+            );
+
+        if (
+            Number.isFinite(x) &&
+            Number.isFinite(y)
+        ) {
+            points.push([x,y,z]);
+
+            xmin = Math.min(xmin,x);
+            xmax = Math.max(xmax,x);
+            ymin = Math.min(ymin,y);
+            ymax = Math.max(ymax,y);
+        }
+    }
+
+    if (!points.length) return;
+
+    if (Math.abs(xmax-xmin) < 0.2) {
+        xmin -= 0.1;
+        xmax += 0.1;
+    }
+
+    if (Math.abs(ymax-ymin) < 0.2) {
+        ymin -= 0.1;
+        ymax += 0.1;
+    }
+
+    const xPad =
+        0.12 * (xmax-xmin);
+
+    const yPad =
+        0.12 * (ymax-ymin);
+
+    xmin -= xPad;
+    xmax += xPad;
+    ymin -= yPad;
+    ymax += yPad;
+
+    const m = {
+        left:64,
+        right:20,
+        top:22,
+        bottom:50
+    };
+
+    const pw =
+        W - m.left - m.right;
+
+    const ph =
+        H - m.top - m.bottom;
+
+    const xp = x =>
+        m.left +
+        (x-xmin) /
+        (xmax-xmin) *
+        pw;
+
+    const yp = y =>
+        m.top +
+        (ymax-y) /
+        (ymax-ymin) *
+        ph;
+
+    ctx.strokeStyle =
+        "rgba(255,255,255,.12)";
+
+    ctx.fillStyle =
+        "#9ca3af";
+
+    ctx.font =
+        "11px Arial";
+
+    for (
+        let i = 0;
+        i <= 4;
+        i++
+    ) {
+        const xv =
+            xmin +
+            i * (xmax-xmin) / 4;
+
+        const x =
+            xp(xv);
+
+        ctx.beginPath();
+        ctx.moveTo(x,m.top);
+        ctx.lineTo(
+            x,
+            m.top + ph
+        );
+        ctx.stroke();
+
+        ctx.textAlign = "center";
+        ctx.fillText(
+            xv.toFixed(2),
+            x,
+            H - 22
+        );
+    }
+
+    for (
+        let i = 0;
+        i <= 4;
+        i++
+    ) {
+        const yv =
+            ymin +
+            i * (ymax-ymin) / 4;
+
+        const y =
+            yp(yv);
+
+        ctx.beginPath();
+        ctx.moveTo(m.left,y);
+        ctx.lineTo(
+            m.left + pw,
+            y
+        );
+        ctx.stroke();
+
+        ctx.textAlign = "right";
+        ctx.fillText(
+            yv.toFixed(2),
+            m.left - 7,
+            y + 4
+        );
+    }
+
+    // Draw z-track using a colour gradient with redshift.
+    for (
+        let i = 1;
+        i < points.length;
+        i++
+    ) {
+        const [x1,y1,z1] =
+            points[i-1];
+
+        const [x2,y2,z2] =
+            points[i];
+
+        const hue =
+            260 -
+            (z2 / 5) * 260;
+
+        ctx.strokeStyle =
+            `hsl(${hue}, 85%, 60%)`;
+
+        ctx.lineWidth = 2.5;
+
+        ctx.beginPath();
+        ctx.moveTo(
+            xp(x1),
+            yp(y1)
+        );
+        ctx.lineTo(
+            xp(x2),
+            yp(y2)
+        );
+        ctx.stroke();
+    }
+
+    // Mark z=0..5 integers for orientation.
+    for (let zi = 0; zi <= 5; zi++) {
+
+        const nearest =
+            points.reduce(
+                (best, p) =>
+                Math.abs(p[2]-zi) <
+                Math.abs(best[2]-zi)
+                ? p
+                : best,
+                points[0]
+            );
+
+        const x =
+            xp(nearest[0]);
+
+        const y =
+            yp(nearest[1]);
+
+        ctx.fillStyle =
+            "#cbd5e1";
+
+        ctx.font =
+            "10px Arial";
+
+        ctx.textAlign =
+            "left";
+
+        ctx.fillText(
+            `z=${zi}`,
+            x + 5,
+            y - 5
+        );
+    }
+
+    // Current-z marker.
+
+    colourColourHitPoints = points.map(p => ({
+        x: p[0],
+        y: p[1],
+        z: p[2],
+        px: xp(p[0]),
+        py: yp(p[1])
+    }));
+
+    colourColourDegeneratePair =
+        findColourColourDegeneracy(
+            colourColourHitPoints
+        );
+
+    if (colourColourDegeneratePair) {
+        const d = colourColourDegeneratePair;
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(255,255,255,0.58)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6,5]);
+        ctx.beginPath();
+        ctx.moveTo(d.a.px, d.a.py);
+        ctx.lineTo(d.b.px, d.b.py);
+        ctx.stroke();
+        ctx.restore();
+
+        for (const p of [d.a, d.b]) {
+            ctx.fillStyle = "#f8fafc";
+            ctx.strokeStyle = "#111827";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(p.px, p.py, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        degeneracySummary.innerHTML =
+            `<strong>Closest separated-redshift match:</strong> ` +
+            `z ≈ ${d.a.z.toFixed(2)} and z ≈ ${d.b.z.toFixed(2)} ` +
+            `(colour-space separation ${d.distance.toFixed(3)} mag). ` +
+            `Dashed line joins the pair.`;
+    } else {
+        degeneracySummary.textContent =
+            "No separated-redshift degeneracy was found for these two colours.";
+    }
+
+    const currentZ =
+        parseFloat(
+            visualiserZ.value
+        ) || 0;
+
+    const currentX =
+        colourPairValue(
+            colourColourX.value,
+            filters,
+            currentZ,
+            alpha
+        );
+
+    const currentY =
+        colourPairValue(
+            colourColourY.value,
+            filters,
+            currentZ,
+            alpha
+        );
+
+    if (
+        Number.isFinite(currentX) &&
+        Number.isFinite(currentY)
+    ) {
+        const x =
+            xp(currentX);
+
+        const y =
+            yp(currentY);
+
+        ctx.fillStyle =
+            "#ffffff";
+
+        ctx.strokeStyle =
+            "#111827";
+
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+        ctx.arc(
+            x,
+            y,
+            6,
+            0,
+            Math.PI * 2
+        );
+        ctx.fill();
+        ctx.stroke();
+    }
+
+    ctx.strokeStyle =
+        "rgba(255,255,255,.35)";
+
+    ctx.strokeRect(
+        m.left,
+        m.top,
+        pw,
+        ph
+    );
+
+    const optionX =
+        colourColourX
+        .selectedOptions[0]
+        ?.textContent || "";
+
+    const optionY =
+        colourColourY
+        .selectedOptions[0]
+        ?.textContent || "";
+
+    ctx.fillStyle =
+        "#d1d5db";
+
+    ctx.font =
+        "12px Arial";
+
+    ctx.textAlign =
+        "center";
+
+    ctx.fillText(
+        optionX,
+        m.left + pw / 2,
+        H - 4
+    );
+
+    ctx.save();
+
+    ctx.translate(
+        16,
+        m.top + ph / 2
+    );
+
+    ctx.rotate(
+        -Math.PI / 2
+    );
+
+    ctx.fillText(
+        optionY,
+        0,
+        0
+    );
+
+    ctx.restore();
+}
+
+function setLinkedRedshift(value) {
+    let z = parseFloat(value);
+    if (!Number.isFinite(z)) z = 0;
+
+    z = Math.max(0, Math.min(5, z));
+    const formatted = z.toFixed(2);
+
+    visualiserZ.value = formatted;
+    colourZSlider.value = formatted;
+    colourColourSlider.value = formatted;
+
+    colourZSliderReadout.textContent = `z = ${formatted}`;
+    colourColourSliderReadout.textContent = `z = ${formatted}`;
+
+    drawRedshiftVisualiser();
+}
+
+
+let photozNoiseSeed = 1;
+let photozHitPoints = [];
+let photozObservation = null;
+
+function seededNoise(index, seed) {
+    // Deterministic pseudo-Gaussian noise via Box-Muller.
+    const x1 = Math.sin((index + 1) * 12.9898 + seed * 78.233) * 43758.5453;
+    const x2 = Math.sin((index + 1) * 93.9898 + seed * 11.173) * 12741.3719;
+
+    const u1 = Math.max(1e-9, Math.abs(x1 - Math.floor(x1)));
+    const u2 = Math.abs(x2 - Math.floor(x2));
+
+    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+
+function syntheticMagnitudesAtZ(filters, z, alpha) {
+    const fluxes = filters.map(f => integrateBandFlux(f, z, alpha));
+    const positive = fluxes.filter(v => Number.isFinite(v) && v > 0);
+
+    if (!positive.length) return [];
+
+    const norm = Math.max(...positive);
+
+    return fluxes.map(v => {
+        if (!Number.isFinite(v) || v <= 0) return NaN;
+        return -2.5 * Math.log10(v / norm);
+    });
+}
+
+function buildPhotozObservation() {
+    const filters = filtersForSelection();
+    const alphaRaw = parseFloat(continuumSlope.value);
+    const alpha = Number.isFinite(alphaRaw) ? alphaRaw : -0.5;
+    const zTrue = parseFloat(visualiserZ.value) || 0;
+    const sigma = parseFloat(photozSigma.value) || 0.08;
+
+    const mags = syntheticMagnitudesAtZ(filters, zTrue, alpha);
+
+    if (filters.length < 2 || mags.length < 2) {
+        photozObservation = null;
+        return;
+    }
+
+    const noisy = mags.map((m, i) => {
+        if (!Number.isFinite(m)) return NaN;
+        return m + sigma * seededNoise(i, photozNoiseSeed);
+    });
+
+    photozObservation = {
+        filters,
+        alpha,
+        zTrue,
+        sigma,
+        mags: noisy
+    };
+}
+
+function photozChi2AtZ(z) {
+    if (!photozObservation) return NaN;
+
+    const model =
+        syntheticMagnitudesAtZ(
+            photozObservation.filters,
+            z,
+            photozObservation.alpha
+        );
+
+    if (!model.length) return NaN;
+
+    // Allow an arbitrary additive magnitude offset. Only colours matter.
+    const diffs = [];
+
+    for (let i = 0; i < model.length; i++) {
+        const obs = photozObservation.mags[i];
+        const mod = model[i];
+
+        if (Number.isFinite(obs) && Number.isFinite(mod)) {
+            diffs.push(obs - mod);
+        }
+    }
+
+    if (diffs.length < 2) return NaN;
+
+    const offset =
+        diffs.reduce((a,b) => a+b,0) / diffs.length;
+
+    let chi2 = 0;
+
+    for (let i = 0; i < model.length; i++) {
+        const obs = photozObservation.mags[i];
+        const mod = model[i];
+
+        if (!Number.isFinite(obs) || !Number.isFinite(mod)) continue;
+
+        const resid = obs - (mod + offset);
+        chi2 += (resid * resid) /
+                (photozObservation.sigma * photozObservation.sigma);
+    }
+
+    return chi2;
+}
+
+function drawPhotozLikelihood() {
+    const rect = photozCanvas.getBoundingClientRect();
+    const W = Math.max(520, rect.width || 900);
+    const H = 260;
+    const dpr = window.devicePixelRatio || 1;
+
+    photozCanvas.width = Math.round(W * dpr);
+    photozCanvas.height = Math.round(H * dpr);
+
+    const ctx = photozCanvas.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.fillStyle = "#030712";
+    ctx.fillRect(0,0,W,H);
+
+    const sigma = parseFloat(photozSigma.value) || 0.08;
+    photozSigmaReadout.textContent = `σ = ${sigma.toFixed(2)} mag`;
+
+    if (!photozObservation) buildPhotozObservation();
+
+    if (!photozObservation) {
+        photozHitPoints = [];
+        ctx.fillStyle = "#9ca3af";
+        ctx.font = "14px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(
+            "Choose a filter set with at least two usable bands.",
+            W/2,
+            H/2
+        );
+        photozBest.textContent = "—";
+        photozSecondary.textContent = "—";
+        return;
+    }
+
+    const samples = [];
+    let minChi2 = Infinity;
+
+    for (let i = 0; i <= 250; i++) {
+        const z = i * 0.02;
+        const chi2 = photozChi2AtZ(z);
+
+        if (Number.isFinite(chi2)) {
+            minChi2 = Math.min(minChi2, chi2);
+            samples.push({z, chi2});
+        }
+    }
+
+    if (!samples.length || !Number.isFinite(minChi2)) return;
+
+    samples.forEach(p => {
+        p.like = Math.exp(-0.5 * (p.chi2 - minChi2));
+    });
+
+    const best =
+        samples.reduce((a,b) => b.like > a.like ? b : a, samples[0]);
+
+    const localPeaks = [];
+    for (let i = 1; i < samples.length - 1; i++) {
+        if (
+            samples[i].like >= samples[i-1].like &&
+            samples[i].like >= samples[i+1].like
+        ) {
+            localPeaks.push(samples[i]);
+        }
+    }
+
+    localPeaks.sort((a,b) => b.like - a.like);
+
+    const secondary =
+        localPeaks.find(p => Math.abs(p.z - best.z) >= 0.35) || null;
+
+    const m = {left:58, right:20, top:20, bottom:42};
+    const pw = W - m.left - m.right;
+    const ph = H - m.top - m.bottom;
+
+    const xp = z => m.left + (z / 5) * pw;
+    const yp = l => m.top + (1 - l) * ph;
+
+    ctx.strokeStyle = "rgba(255,255,255,.12)";
+    ctx.fillStyle = "#9ca3af";
+    ctx.font = "11px Arial";
+
+    for (let i = 0; i <= 5; i++) {
+        const x = xp(i);
+        ctx.beginPath();
+        ctx.moveTo(x,m.top);
+        ctx.lineTo(x,m.top+ph);
+        ctx.stroke();
+        ctx.textAlign = "center";
+        ctx.fillText(i.toFixed(0), x, H-20);
+    }
+
+    for (let i = 0; i <= 4; i++) {
+        const l = i/4;
+        const y = yp(l);
+        ctx.beginPath();
+        ctx.moveTo(m.left,y);
+        ctx.lineTo(m.left+pw,y);
+        ctx.stroke();
+        ctx.textAlign = "right";
+        ctx.fillText(l.toFixed(2), m.left-7, y+4);
+    }
+
+    ctx.strokeStyle = "#c4b5fd";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+
+    samples.forEach((p,i) => {
+        const x = xp(p.z);
+        const y = yp(p.like);
+        if (i === 0) ctx.moveTo(x,y);
+        else ctx.lineTo(x,y);
+    });
+
+    ctx.stroke();
+
+    // Cache screen coordinates for mouseover interrogation.
+    photozHitPoints = samples.map(p => ({
+        z: p.z,
+        like: p.like,
+        chi2: p.chi2,
+        px: xp(p.z),
+        py: yp(p.like)
+    }));
+
+    // True-z line
+    ctx.strokeStyle = "rgba(255,255,255,.55)";
+    ctx.setLineDash([5,5]);
+    ctx.beginPath();
+    ctx.moveTo(xp(photozObservation.zTrue), m.top);
+    ctx.lineTo(xp(photozObservation.zTrue), m.top+ph);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Best-fit marker
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(xp(best.z), yp(best.like), 5, 0, Math.PI*2);
+    ctx.fill();
+
+    // Secondary peak marker
+    if (secondary) {
+        ctx.fillStyle = "#f59e0b";
+        ctx.beginPath();
+        ctx.arc(xp(secondary.z), yp(secondary.like), 4.5, 0, Math.PI*2);
+        ctx.fill();
+    }
+
+    ctx.strokeStyle = "rgba(255,255,255,.35)";
+    ctx.strokeRect(m.left,m.top,pw,ph);
+
+    ctx.fillStyle = "#d1d5db";
+    ctx.textAlign = "center";
+    ctx.font = "12px Arial";
+    ctx.fillText("Redshift z", m.left + pw/2, H-4);
+
+    ctx.save();
+    ctx.translate(16, m.top + ph/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.fillText("Relative likelihood", 0, 0);
+    ctx.restore();
+
+    photozTrue.textContent =
+        photozObservation.zTrue.toFixed(2);
+
+    photozBest.textContent =
+        best.z.toFixed(2);
+
+    photozSecondary.textContent =
+        secondary
+        ? `${secondary.z.toFixed(2)} (${secondary.like.toFixed(2)})`
+        : "none";
+
+    if (secondary && secondary.like > 0.25) {
+        photozMessage.innerHTML =
+            `<strong>Multimodal solution:</strong> the same noisy photometry gives a substantial ` +
+            `secondary redshift peak at z ≈ ${secondary.z.toFixed(2)}.`;
+    } else {
+        photozMessage.textContent =
+            "The likelihood is currently dominated by one redshift solution; increase the noise or try a sparser filter set to make degeneracies more visible.";
+    }
+}
+
+function drawRedshiftVisualiser() {
+    photozObservation = null;
+
+    const rect =
+        visualiserCanvas.getBoundingClientRect();
+
+    const cssWidth =
+        Math.max(
+            520,
+            rect.width || 760
+        );
+
+    const cssHeight = 360;
+    const dpr =
+        window.devicePixelRatio || 1;
+
+    visualiserCanvas.width =
+        Math.round(cssWidth * dpr);
+
+    visualiserCanvas.height =
+        Math.round(cssHeight * dpr);
+
+    const ctx =
+        visualiserCanvas.getContext("2d");
+
+    ctx.setTransform(
+        dpr, 0, 0, dpr, 0, 0
+    );
+
+    const W = cssWidth;
+    const H = cssHeight;
+
+    const margin = {
+        left: 58,
+        right: 18,
+        top: 34,
+        bottom: 48
+    };
+
+    const plotW =
+        W - margin.left - margin.right;
+
+    const plotH =
+        H - margin.top - margin.bottom;
+
+    const [xmin, xmax] =
+        visualiserAxisRange();
+
+    const xToPx = x =>
+        margin.left +
+        (x - xmin) /
+        (xmax - xmin) *
+        plotW;
+
+    const z =
+        parseFloat(
+            visualiserZ.value
+        ) || 0;
+
+    visualiserZReadout.innerHTML =
+        `Redshift&nbsp;&nbsp; z = ${z.toFixed(2)}`;
+
+    const linkedZ = z.toFixed(2);
+    colourZSlider.value = linkedZ;
+    colourColourSlider.value = linkedZ;
+    colourZSliderReadout.textContent = `z = ${linkedZ}`;
+    colourColourSliderReadout.textContent = `z = ${linkedZ}`;
+
+    ctx.clearRect(0, 0, W, H);
+
+    ctx.fillStyle = "#030712";
+    ctx.fillRect(0, 0, W, H);
+
+    // Plot title.
+    ctx.fillStyle = "#e5e7eb";
+    ctx.font = "13px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(
+        `Observed wavelength (${unitLabel()})`,
+        margin.left + plotW / 2,
+        18
+    );
+
+    // Grid and wavelength tick labels.
+    ctx.strokeStyle =
+        "rgba(255,255,255,0.12)";
+
+    ctx.lineWidth = 1;
+
+    for (
+        let i = 0;
+        i <= 5;
+        i++
+    ) {
+        const x =
+            margin.left +
+            i * plotW / 5;
+
+        ctx.beginPath();
+        ctx.moveTo(x, margin.top);
+        ctx.lineTo(
+            x,
+            margin.top + plotH
+        );
+        ctx.stroke();
+
+        const wl =
+            xmin +
+            i * (xmax - xmin) / 5;
+
+        ctx.fillStyle = "#9ca3af";
+        ctx.font = "11px Arial";
+        ctx.textAlign = "center";
+
+        ctx.fillText(
+            formatWavelength(wl),
+            x,
+            H - 15
+        );
+    }
+
+    // Wavelength-colour strip at the bottom of the plot.
+    const gradientY =
+        margin.top + plotH - 8;
+
+    for (
+        let p = 0;
+        p < plotW;
+        p++
+    ) {
+        const wl =
+            xmin +
+            p / plotW *
+            (xmax - xmin);
+
+        ctx.fillStyle =
+            wavelengthDisplayColour(wl);
+
+        ctx.fillRect(
+            margin.left + p,
+            gradientY,
+            1.2,
+            8
+        );
+    }
+
+    // Filter response curves.
+    const filters =
+        filtersForSelection();
+
+    if (showFilterCurves.checked) {
+
+        filters.forEach(
+            (filter, fi) => {
+
+                const colour =
+                    colourByWavelength.checked
+                    ? wavelengthDisplayColour(
+                        filter.centre
+                    )
+                    : "#60a5fa";
+
+                ctx.beginPath();
+
+                let started = false;
+
+                for (
+                    let p = 0;
+                    p <= plotW;
+                    p += 2
+                ) {
+                    const wl =
+                        xmin +
+                        p / plotW *
+                        (xmax - xmin);
+
+                    const response =
+                        gaussian(
+                            wl,
+                            filter.centre,
+                            filter.fwhm
+                        );
+
+                    const x =
+                        margin.left + p;
+
+                    const y =
+                        margin.top +
+                        plotH *
+                        (1 - 0.82 * response);
+
+                    if (!started) {
+                        ctx.moveTo(
+                            x,
+                            margin.top + plotH
+                        );
+                        ctx.lineTo(x, y);
+                        started = true;
+                    }
+                    else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+
+                ctx.lineTo(
+                    margin.left + plotW,
+                    margin.top + plotH
+                );
+
+                ctx.closePath();
+
+                ctx.globalAlpha = 0.12;
+                ctx.fillStyle = colour;
+                ctx.fill();
+
+                ctx.globalAlpha = 0.90;
+                ctx.strokeStyle = colour;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.globalAlpha = 1;
+
+                if (
+                    filter.centre >= xmin &&
+                    filter.centre <= xmax
+                ) {
+                    ctx.fillStyle = colour;
+                    ctx.font =
+                        "bold 11px Arial";
+
+                    ctx.textAlign =
+                        "center";
+
+                    ctx.fillText(
+                        `${filter.family} ${filter.name}`,
+                        xToPx(
+                            filter.centre
+                        ),
+                        margin.top +
+                        13 +
+                        (fi % 2) * 13
+                    );
+                }
+            }
+        );
+    }
+
+    const mode =
+        visualiserLineSet.value;
+
+    if (mode === "quasar") {
+
+        const alpha =
+            parseFloat(
+                continuumSlope.value
+            );
+
+        const safeAlpha =
+            Number.isFinite(alpha)
+            ? alpha
+            : -0.5;
+
+        const values = [];
+        let maxFlux = 0;
+
+        for (
+            let p = 0;
+            p <= plotW;
+            p += 2
+        ) {
+            const obs =
+                xmin +
+                p / plotW *
+                (xmax - xmin);
+
+            const flux =
+                quasarModelFluxObserved(obs, z, safeAlpha);
+
+            values.push([
+                margin.left + p,
+                flux
+            ]);
+
+            maxFlux =
+                Math.max(
+                    maxFlux,
+                    flux
+                );
+        }
+
+        const scaleMax =
+            normaliseSpectrum.checked
+            ? Math.max(maxFlux, 1e-9)
+            : 4.0;
+
+        ctx.beginPath();
+
+        values.forEach(
+            ([x, flux], i) => {
+
+                let fraction =
+                    Math.max(
+                        0,
+                        Math.min(
+                            1,
+                            flux / scaleMax
+                        )
+                    );
+
+                if (
+                    logFluxScale.checked
+                ) {
+                    fraction =
+                        Math.log10(
+                            1 + 9 * fraction
+                        );
+                }
+
+                const y =
+                    margin.top +
+                    plotH -
+                    fraction *
+                    plotH *
+                    0.78;
+
+                if (i === 0)
+                    ctx.moveTo(x, y);
+                else
+                    ctx.lineTo(x, y);
+            }
+        );
+
+        ctx.strokeStyle =
+            "#f3f4f6";
+
+        ctx.lineWidth = 2.2;
+        ctx.stroke();
+
+        if (
+            showReferenceLines.checked
+        ) {
+            quasarLines.forEach(
+                (line, i) => {
+
+                    const obs =
+                        line.wavelength *
+                        (1 + z);
+
+                    if (
+                        obs < xmin ||
+                        obs > xmax
+                    ) return;
+
+                    const x =
+                        xToPx(obs);
+
+                    const lineColour =
+                        colourByWavelength.checked
+                        ? wavelengthDisplayColour(obs)
+                        : "#e5e7eb";
+
+                    ctx.strokeStyle =
+                        lineColour;
+
+                    ctx.globalAlpha =
+                        0.80;
+
+                    ctx.setLineDash(
+                        [3, 3]
+                    );
+
+                    ctx.beginPath();
+                    ctx.moveTo(
+                        x,
+                        margin.top + 34
+                    );
+                    ctx.lineTo(
+                        x,
+                        gradientY
+                    );
+                    ctx.stroke();
+
+                    ctx.setLineDash([]);
+                    ctx.globalAlpha = 1;
+
+                    ctx.fillStyle =
+                        lineColour;
+
+                    ctx.font =
+                        "bold 10px Arial";
+
+                    ctx.textAlign =
+                        "center";
+
+                    ctx.fillText(
+                        line.name,
+                        x,
+                        margin.top +
+                        48 +
+                        (i % 3) * 12
+                    );
+                }
+            );
+        }
+    }
+
+    else {
+
+        let lines =
+            spectralLines;
+
+        if (mode !== "all") {
+            lines =
+                spectralLines.filter(
+                    line =>
+                    line.categories.includes(
+                        mode
+                    )
+                );
+        }
+
+        if (
+            showReferenceLines.checked
+        ) {
+            lines.forEach(
+                (line, i) => {
+
+                    const obs =
+                        line.wavelength *
+                        (1 + z);
+
+                    if (
+                        obs < xmin ||
+                        obs > xmax
+                    ) return;
+
+                    const x =
+                        xToPx(obs);
+
+                    const lineColour =
+                        colourByWavelength.checked
+                        ? wavelengthDisplayColour(obs)
+                        : "#e5e7eb";
+
+                    ctx.strokeStyle =
+                        lineColour;
+
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha =
+                        0.90;
+
+                    ctx.beginPath();
+                    ctx.moveTo(
+                        x,
+                        gradientY
+                    );
+                    ctx.lineTo(
+                        x,
+                        margin.top +
+                        plotH * 0.28
+                    );
+                    ctx.stroke();
+
+                    ctx.globalAlpha = 1;
+
+                    ctx.fillStyle =
+                        lineColour;
+
+                    ctx.font =
+                        "bold 10px Arial";
+
+                    ctx.textAlign =
+                        "center";
+
+                    ctx.fillText(
+                        line.name,
+                        x,
+                        margin.top +
+                        55 +
+                        (i % 3) * 12
+                    );
+                }
+            );
+        }
+    }
+
+    ctx.strokeStyle =
+        "rgba(255,255,255,0.35)";
+
+    ctx.strokeRect(
+        margin.left,
+        margin.top,
+        plotW,
+        plotH
+    );
+
+    visualiserStatus.innerHTML =
+        `<strong>z = ${z.toFixed(2)}</strong>. ` +
+        `Filter and line colours now follow their observed/central wavelengths. ` +
+        `The white curve is the simplified quasar spectrum.`;
+
+    updateSyntheticPhotometry();
+    drawColourZTrack();
+    drawColourColourDiagram();
+    drawPhotozLikelihood();
+}
+
+function populateDopplerRestLine() {
+
+    const previous =
+        dopplerRestLine.selectedIndex >= 0
+        ? dopplerRestLine.value
+        : null;
+
+    dopplerRestLine.innerHTML = "";
+
+    spectralLines.forEach((line, index) => {
+
+        const option = document.createElement("option");
+        option.value = index;
+        option.textContent =
+            `${line.name} — ${formatWavelength(line.wavelength)}`;
+
+        if (
+            previous !== null
+            ? String(index) === previous
+            : line.name === "Hα"
+        ) {
+            option.selected = true;
+        }
+
+        dopplerRestLine.appendChild(option);
+    });
+}
+
+function updateDoppler() {
+
+    const selectedIndex =
+        parseInt(dopplerRestLine.value, 10);
+
+    const line = spectralLines[selectedIndex];
+
+    const observedDisplayed =
+        parseFloat(dopplerObserved.value);
+
+    if (!line || !Number.isFinite(observedDisplayed)) {
+        dopplerResult.textContent =
+            "Enter a valid observed wavelength.";
+        return;
+    }
+
+    const observedNm =
+        displayToNm(observedDisplayed);
+
+    const restNm = line.wavelength;
+    const cKmS = 299792.458;
+
+    const classicalBeta =
+        (observedNm - restNm) / restNm;
+
+    const classicalVelocity =
+        classicalBeta * cKmS;
+
+    const ratio = observedNm / restNm;
+
+    const relativisticBeta =
+        (ratio * ratio - 1) /
+        (ratio * ratio + 1);
+
+    const relativisticVelocity =
+        relativisticBeta * cKmS;
+
+    const direction =
+        relativisticVelocity > 0
+        ? "receding"
+        : relativisticVelocity < 0
+        ? "approaching"
+        : "no radial shift";
+
+    const z =
+        ratio - 1;
+
+    dopplerResult.innerHTML =
+        `<strong>${line.name}</strong><br>
+         λ<sub>rest</sub> = ${formatWavelength(restNm)}<br>
+         λ<sub>obs</sub> = ${formatWavelength(observedNm)}<br>
+         z = ${z.toFixed(6)}<br>
+         Classical: <strong>${classicalVelocity.toFixed(2)} km/s</strong><br>
+         Relativistic: <strong>${relativisticVelocity.toFixed(2)} km/s</strong><br>
+         Direction: <strong>${direction}</strong>`;
+}
+
+function updateRedshiftMode() {
+
+    const reverse = redshiftMode.value === "z";
+
+    zField.style.display = reverse ? "none" : "flex";
+    observedField.style.display = reverse ? "flex" : "none";
+    useObservedButton.style.display = reverse ? "none" : "block";
+
+    updateRedshift();
+}
+
+function updateRedshift() {
+
+    const selectedIndex = parseInt(restLineSelect.value, 10);
+    const line = spectralLines[selectedIndex];
+
+    if (!line) return;
+
+    if (redshiftMode.value === "observed") {
+
+        let z = parseFloat(redshiftInput.value);
+
+        if (!Number.isFinite(z)) {
+            redshiftResult.textContent = "Enter a valid redshift.";
+            return;
+        }
+
+        z = Math.max(0, Math.min(10, z));
+        redshiftInput.value = z;
+
+        const observed = line.wavelength * (1 + z);
+        const region = broadRegion(observed);
+
+        redshiftResult.innerHTML =
+            `<strong>${line.name}</strong> at z = ${z.toFixed(4)}
+             → λ<sub>obs</sub> =
+             <strong>${formatWavelength(observed)}</strong>
+             (${region})`;
+
+        useObservedButton.dataset.observed = observed;
+    }
+    else {
+
+        const observedDisplayed =
+            parseFloat(observedInput.value);
+
+        if (!Number.isFinite(observedDisplayed)) {
+            redshiftResult.textContent =
+                "Enter a valid observed wavelength.";
+            return;
+        }
+
+        const observed = displayToNm(observedDisplayed);
+        const z = (observed / line.wavelength) - 1;
+
+        const shiftDescription =
+            z >= 0 ? "redshift" : "blueshift";
+
+        redshiftResult.innerHTML =
+            `<strong>${line.name}</strong>:
+             λ<sub>rest</sub> = ${formatWavelength(line.wavelength)},
+             λ<sub>obs</sub> = ${formatWavelength(observed)}
+             → <strong>z = ${z.toFixed(5)}</strong>
+             (${shiftDescription})`;
+    }
+}
+
+function changeUnits() {
+
+    // Preserve the physical wavelength while changing its display unit.
+    const oldUnit = unitSelect.dataset.previousUnit || "nm";
+    const oldValue = parseFloat(wavelengthInput.value);
+
+    let nm = oldValue;
+    if (oldUnit === "angstrom") nm = oldValue / 10;
+    if (oldUnit === "um") nm = oldValue * 1000;
+
+    // Preserve the reverse-redshift observed wavelength too.
+    const oldObserved = parseFloat(observedInput.value);
+    let observedNm = oldObserved;
+    if (oldUnit === "angstrom") observedNm = oldObserved / 10;
+    if (oldUnit === "um") observedNm = oldObserved * 1000;
+
+    // Preserve the Doppler observed wavelength as well.
+    const oldDopplerObserved = parseFloat(dopplerObserved.value);
+    let dopplerObservedNm = oldDopplerObserved;
+    if (oldUnit === "angstrom") dopplerObservedNm = oldDopplerObserved / 10;
+    if (oldUnit === "um") dopplerObservedNm = oldDopplerObserved * 1000;
+
+    unitSelect.dataset.previousUnit = unitSelect.value;
+
+    configureWavelengthInput(nm);
+
+    observedInput.value =
+        nmToDisplay(observedNm).toFixed(wavelengthDecimals());
+
+    dopplerObserved.value =
+        nmToDisplay(dopplerObservedNm).toFixed(wavelengthDecimals());
+
+    populateRestLineSelect();
+    populateDopplerRestLine();
+    drawSpectralMarkers();
+    buildSyntheticSpectrum();
+    updateHydrogenSeries();
+    drawRedshiftVisualiser();
+    update();
+    updateRedshift();
+    updateDoppler();
+}
+
+slider.addEventListener("input", () => {
+    // The slider always represents nanometres internally.
+    // Convert its value into whichever unit the numeric field is displaying.
+    const wavelengthNm = parseFloat(slider.value);
+    wavelengthInput.value =
+        nmToDisplay(wavelengthNm).toFixed(wavelengthDecimals());
+    update();
+});
+
+wavelengthInput.addEventListener("input", update);
+unitSelect.addEventListener("change", changeUnits);
+
+lineSet.addEventListener("change", () => {
+    drawSpectralMarkers();
+    buildSyntheticSpectrum();
+});
+
+restLineSelect.addEventListener("change", updateRedshift);
+redshiftInput.addEventListener("input", updateRedshift);
+redshiftMode.addEventListener("change", updateRedshiftMode);
+observedInput.addEventListener("input", updateRedshift);
+spectrumMode.addEventListener("change", buildSyntheticSpectrum);
+dopplerRestLine.addEventListener("change", updateDoppler);
+dopplerObserved.addEventListener("input", updateDoppler);
+seriesSelect.addEventListener("change", updateHydrogenSeries);
+maxUpperN.addEventListener("input", updateHydrogenSeries);
+visualiserZ.addEventListener("input", () => {
+    setLinkedRedshift(visualiserZ.value);
+});
+visualiserLineSet.addEventListener("change", drawRedshiftVisualiser);
+filterSet.addEventListener("change", drawRedshiftVisualiser);
+axisMode.addEventListener("change", drawRedshiftVisualiser);
+continuumSlope.addEventListener("input", drawRedshiftVisualiser);
+showFilterCurves.addEventListener("change", drawRedshiftVisualiser);
+showReferenceLines.addEventListener("change", drawRedshiftVisualiser);
+colourByWavelength.addEventListener("change", drawRedshiftVisualiser);
+logFluxScale.addEventListener("change", drawRedshiftVisualiser);
+normaliseSpectrum.addEventListener("change", drawRedshiftVisualiser);
+colourZSelect.addEventListener("change", drawColourZTrack);
+colourColourX.addEventListener("change", drawColourColourDiagram);
+colourColourY.addEventListener("change", drawColourColourDiagram);
+
+colourZSlider.addEventListener("input", () => {
+    setLinkedRedshift(colourZSlider.value);
+});
+
+colourColourSlider.addEventListener("input", () => {
+    setLinkedRedshift(colourColourSlider.value);
+});
+
+colourZCanvas.addEventListener("click", event => {
+    const p = canvasPointerPosition(colourZCanvas, event);
+    const nearest = nearestTrackPoint(colourZHitPoints, p.x, p.y, 22);
+
+    if (nearest) {
+        setLinkedRedshift(nearest.z);
+    }
+});
+
+colourColourCanvas.addEventListener("click", event => {
+    const p = canvasPointerPosition(colourColourCanvas, event);
+    const nearest = nearestTrackPoint(colourColourHitPoints, p.x, p.y, 22);
+
+    if (nearest) {
+        setLinkedRedshift(nearest.z);
+    }
+});
+
+colourZCanvas.addEventListener("mousemove", event => {
+    const p = canvasPointerPosition(colourZCanvas, event);
+    const nearest = nearestTrackPoint(colourZHitPoints, p.x, p.y, 18);
+    colourZCanvas.style.cursor = nearest ? "pointer" : "default";
+    colourZCanvas.title = nearest
+        ? `z ≈ ${nearest.z.toFixed(2)}; colour ≈ ${nearest.value.toFixed(3)} mag — click to jump`
+        : "Click near the track to jump to that redshift";
+});
+
+colourColourCanvas.addEventListener("mousemove", event => {
+    const p = canvasPointerPosition(colourColourCanvas, event);
+    const nearest = nearestTrackPoint(colourColourHitPoints, p.x, p.y, 18);
+    colourColourCanvas.style.cursor = nearest ? "pointer" : "default";
+    colourColourCanvas.title = nearest
+        ? `z ≈ ${nearest.z.toFixed(2)}; click to jump`
+        : "Click near the track to jump to that redshift";
+});
+
+photozSigma.addEventListener("input", () => {
+    photozObservation = null;
+    drawPhotozLikelihood();
+});
+
+photozRegenerate.addEventListener("click", () => {
+    photozNoiseSeed += 1;
+    photozObservation = null;
+    drawPhotozLikelihood();
+});
+
+photozCanvas.addEventListener("mousemove", event => {
+    if (!photozHitPoints.length) return;
+
+    const rect = photozCanvas.getBoundingClientRect();
+    const x = (event.clientX - rect.left) *
+              (photozCanvas.clientWidth / rect.width);
+    const y = (event.clientY - rect.top) *
+              (photozCanvas.clientHeight / rect.height);
+
+    // For a P(z) plot the x coordinate uniquely sets z, so use the
+    // closest sampled redshift rather than requiring the cursor to
+    // be exactly on the thin curve.
+    let nearest = photozHitPoints[0];
+    let bestDx = Math.abs(nearest.px - x);
+
+    for (const p of photozHitPoints) {
+        const dx = Math.abs(p.px - x);
+        if (dx < bestDx) {
+            bestDx = dx;
+            nearest = p;
+        }
+    }
+
+    const curveDistance = Math.abs(nearest.py - y);
+
+    photozHoverReadout.innerHTML =
+        `<strong>z = ${nearest.z.toFixed(2)}</strong>` +
+        ` &nbsp; | &nbsp; relative likelihood = ${nearest.like.toFixed(3)}` +
+        ` &nbsp; | &nbsp; Δχ² = ${(nearest.chi2 - Math.min(...photozHitPoints.map(q => q.chi2))).toFixed(2)}`;
+
+    photozCanvas.style.cursor =
+        curveDistance < 18 ? "crosshair" : "default";
+});
+
+photozCanvas.addEventListener("mouseleave", () => {
+    photozHoverReadout.textContent =
+        "Move the mouse over the likelihood curve to inspect z and relative likelihood.";
+});
+
+
+
+window.addEventListener("resize", drawRedshiftVisualiser);
+
+resetVisualiser.addEventListener("click", () => {
+    visualiserLineSet.value = "quasar";
+    filterSet.value = "sdss";
+    axisMode.value = "auto";
+    continuumSlope.value = "-0.5";
+    visualiserZ.value = "0.36";
+    colourZSlider.value = "0.36";
+    colourColourSlider.value = "0.36";
+    showFilterCurves.checked = true;
+    showReferenceLines.checked = true;
+    colourByWavelength.checked = true;
+    logFluxScale.checked = false;
+    normaliseSpectrum.checked = true;
+    drawRedshiftVisualiser();
+});
+
+saveVisualiser.addEventListener("click", () => {
+    const link = document.createElement("a");
+    link.download = `redshift-spectrum-z${parseFloat(visualiserZ.value).toFixed(2)}.png`;
+    link.href = visualiserCanvas.toDataURL("image/png");
+    link.click();
+});
+
+useMainWavelength.addEventListener("click", () => {
+    const displayed = parseFloat(wavelengthInput.value);
+    if (!Number.isFinite(displayed)) return;
+
+    dopplerObserved.value =
+        displayed.toFixed(wavelengthDecimals());
+
+    updateDoppler();
+});
+
+useObservedButton.addEventListener("click", () => {
+
+    const observed =
+        parseFloat(useObservedButton.dataset.observed);
+
+    if (!Number.isFinite(observed)) return;
+
+    setMainWavelength(observed);
+});
+
+unitSelect.dataset.previousUnit = unitSelect.value;
+configureWavelengthInput(486.1);
+observedInput.value = nmToDisplay(984.42).toFixed(wavelengthDecimals());
+
+buildSpectrumGradient();
+populateRestLineSelect();
+populateDopplerRestLine();
+drawSpectralMarkers();
+buildSyntheticSpectrum();
+updateHydrogenSeries();
+drawRedshiftVisualiser();
+update();
+updateRedshiftMode();
+
+// Start the Doppler tool just slightly redward of Hα.
+dopplerObserved.value =
+    nmToDisplay(657.00).toFixed(wavelengthDecimals());
+updateDoppler();
+
+// Start the information panel on Hβ.
+const initialInfoLine =
+    spectralLines.find(line => line.name === "Hβ");
+if (initialInfoLine) showLineInfo(initialInfoLine);
+
+</script>
+
+</body>
+</html>
